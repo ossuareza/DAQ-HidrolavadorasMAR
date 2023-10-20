@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+
+	<style type="text/css">
+		/* body,div,table,thead,tbody,tfoot,tr,th,td,p { font-family:"Calibri"; font-size:x-small }
+		a.comment-indicator:hover + comment { background:#ffd; position:absolute; display:block; border:1px solid black; padding:0.5em;  } 
+		a.comment-indicator { background:red; display:inline-block; border:1px solid black; width:0.5em; height:0.5em;  } 
+		comment { display:none;  }  */
+
+		@import url('https://fonts.googleapis.com/css?family=Montserrat|Open+Sans|Roboto');
+		/* *{
+		margin:0;
+		padding: 0;
+		outline: 0;
+		} */
+		table{
+			width: 60%; 
+			border-collapse: collapse;
+			border-spacing: 0;
+			box-shadow: 0 2px 15px rgba(64,64,64,.7);
+			border-radius: 12px 12px 0 0;
+			overflow: hidden;
+
+		}
+		td , th{
+			padding: 15px 20px;
+			border-bottom: 1px solid #000000;
+			border-left: 1px solid #000000; 
+			border-right: 1px solid #000000
+
+		}
+		.td_top{
+			vertical-align: top;
+		}
+		tr{
+			font-family: 'Montserrat', sans-serif;
+			font-size:x-small;
+		}
+		/* tr:nth-child(even){
+			background-color: #eeeeee;
+		} */
+
+	</style>
+	
+</head>
+
+
+
+<body>
+<table cellspacing="0" border="0">
+	<colgroup span="8" width="137"></colgroup>
+	<tr>
+		<td colspan=2 height="80"><img src="logo.png" alt="Hidrolavadoras MAR Image" width="200" height="34"></td>
+		<td class="td_top" align="center">Velocidad n (rpm)</td>
+		<td class="td_top" align="center">Potencia P(kW)</td>
+		<td class="td_top" colspan=2>Numero del parqueadero:</td>
+		<td class="td_top" colspan=2>Número serial de la bomba:</td>
+		</tr>
+	<!-- <tr>
+		<td><br></td>
+		<td><br></td>
+		<td colspan=2><br></td>
+		<td colspan=2><br></td>
+		</tr> -->
+	<tr class="td_top">
+		<td height="50" colspan=2 align="left">Fecha de la prueba:</td>
+		<td colspan=2 align="left">Encargado:</td>
+		<td colspan=2 align="left">Número de modelo de la bomba:</td>
+		<td colspan=2 align="left">Test número:</td>
+		</tr>
+	<!-- <tr>
+		<td colspan=2 align="center"><br></td>
+		<td colspan=2 align="center"><br></td>
+		<td colspan=2 align="center"><br></td>
+		<td colspan=2 align="center"><br></td>
+		</tr> -->
+	<tr>
+		<td rowspan=2 align="center">Medición No.</td>
+		<td rowspan=2 align="center">Flujo Q(m³/s)</td>
+		<td colspan=4 align="center">Cabeza</td>
+		<td rowspan=2 align="center">Potencia de entrada P(kW)</td>
+		<td rowspan=2 align="center">Eficiencia de la bomba η(%)</td>
+	</tr>
+	<tr>
+		<td align="center">Presión estática p(kPa)</td>
+		<td align="center">Velocidad h_v(m)</td>
+		<td align="center">Elevanción z(m)</td>
+		<td align="center">Cabeza total H(m)</td>
+		</tr>
+	<tr>
+		<td align="center">1</td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+	</tr>
+	<tr>
+		<td align="center">2</td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+	</tr>
+	<tr>
+		<td align="center">3</td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+	</tr>
+	<tr>
+		<td align="center">4</td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+	</tr>
+	<tr>
+		<td align="center">5</td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+	</tr>
+	<tr>
+		<td align="center">6</td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+	</tr>
+	<tr>
+		<td align="center">7</td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+	</tr>
+	<tr>
+		<td align="center">8</td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+		<td ><br></td>
+	</tr>
+	<tr>
+		<td align="center">9</td>
+		<td align="center" ><br></td>
+		<td align="center" ><br></td>
+		<td align="center" ><br></td>
+		<td align="center" ><br></td>
+		<td align="center" ><br></td>
+		<td align="center" ><br></td>
+		<td align="center" ><br></td>
+	</tr>
+	<tr>
+		<td colspan=3 align="center" >Punto de garantía</td>
+		<td colspan=5 rowspan=4 align="left"><font size=4>Este test fue desarrollado con agua limpia a (Inserte Temperatura) (temperatura ambiente). La cabeza, el flujo y la potencia fueron medidas con instrumentación electrónica y la exactitud de los resultados ha sido corroborada</font></td>
+		</tr>
+	<tr>
+		<td align="center" >Flujo</td>
+		<td align="center" ><br></td>
+		<td align="center" >m³/s</td>
+		</tr>
+	<tr>
+		<td align="center" >Cabeza</td>
+		<td ><br></td>
+		<td align="center" >m</td>
+		</tr>
+	<tr>
+		<td align="center" >Eficiencia</td>
+		<td align="center" ><br></td>
+		<td align="center" >%</td>
+		</tr>
+	<tr>
+		<td colspan=8 rowspan=6 height="240" align="center" >Grafica 1</td>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		<td  colspan=8 rowspan=8 height="320" align="center" >Grafica 2</td>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+	<tr>
+		</tr>
+</table>
+<!-- ************************************************************************** -->
+</body>
+
+</html>

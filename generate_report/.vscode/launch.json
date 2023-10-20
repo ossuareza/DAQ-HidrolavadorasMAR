@@ -1,0 +1,40 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "C++ Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/generate_report", // Replace with your program's name
+            "args": [],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            // "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: g++ build active file", // Replace with the task label from tasks.json
+            "miDebuggerPath": "/usr/bin/gdb", // Path to gdb
+            // "setupCommands": [
+            //     {
+            //         "description": "Enable pretty-printing for gdb",
+            //         "text": "-enable-pretty-printing",
+            //         "ignoreFailures": true
+            //     }
+            // ],
+            "logging": {
+                "trace": true,
+                "engineLogging": true,
+                "programOutput": true
+            },
+            "stopAtEntry": false,
+            "externalConsole": false
+        }
+    ]
+}
