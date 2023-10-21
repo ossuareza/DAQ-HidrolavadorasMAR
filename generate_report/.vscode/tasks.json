@@ -12,9 +12,11 @@
                 // "-lhpdf",
                 "-I/usr/local/include",    // Include directory for wkhtmltox headers
                 "-lwkhtmltox",       // Link against the wkhtmltox library
+                "-I/snap/root-framework/925/usr/local/include",
                 // "-lwkhtmltoximage",  // Link against the wkhtmltoximage library
                 // "-lwkhtmltoxpdf", 
                 // "${fileDirname}/${fileBasenameNoExtension}"
+                "-std=c++11"
             ],
             "options": {
                 "cwd": "${fileDirname}"
