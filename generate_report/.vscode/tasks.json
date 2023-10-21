@@ -8,7 +8,7 @@
                 // "-fdiagnostics-color=always",
                 // "-g",
                 // "${file}",
-                "-o", "generate_report", "generate_report.cpp",
+                "-g", "-o", "generate_report", "generate_report.cpp", "generate_html.cpp", /* "ploter.cpp", */
                 // "-lhpdf",
                 "-I/usr/local/include",    // Include directory for wkhtmltox headers
                 "-lwkhtmltox",       // Link against the wkhtmltox library
