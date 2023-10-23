@@ -58,6 +58,8 @@
         "span": "cpp",
         "sstream": "cpp",
         "stop_token": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "hsimple.C": "cpp",
+        "macro1.C": "cpp"
     }
 }

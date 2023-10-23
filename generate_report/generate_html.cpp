@@ -203,7 +203,7 @@ void generate_html(characterized_pump pump, int measure_n){
 
     
 
-    wkhtmltopdf_set_object_setting(os, "page", "/home/jplazag/generate_report/report.html");
+    wkhtmltopdf_set_object_setting(os, "page", "report.html");
 
     wkhtmltopdf_add_object(converter, os, NULL);
 

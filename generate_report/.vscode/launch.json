@@ -36,5 +36,28 @@
             "stopAtEntry": false,
             "externalConsole": false
         }
+        // {
+        //   "name": "(gdb) Launch",
+        //   "type": "cppdbg",
+        //   "request": "launch",
+        //   "program": "/snap/root-framework/925/usr/local/bin/root.exe",
+        //   "args": [
+        //     "-l",
+        //     /* "-q",  */"macro1.C"
+        //     // "hsimple.C+g"
+        //   ],
+        //   "stopAtEntry": false,
+        //   "cwd": "${workspaceFolder}",
+        //   "environment": [],
+        //   "externalConsole": false,
+        //   "MIMode": "gdb",
+        //   "setupCommands": [
+        //     {
+        //       "description": "Enable pretty-printing for gdb",
+        //       "text": "-enable-pretty-printing",
+        //       "ignoreFailures": true
+        //     }
+        //   ]
+        // }
     ]
 }
