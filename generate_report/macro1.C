@@ -47,8 +47,8 @@ void macro1(){
             {0,10,20,20,25,30,40,70,60,50};
 
 
-    TCanvas *c1 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 700, 500);
-
+    TCanvas *c1 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 1500, 500);
+    c1->SetGrid();
     int n = 10;
     
     auto graph = new TGraph(n,flow,pump_power);
@@ -62,14 +62,15 @@ void macro1(){
 
     graph->Draw("AC*");
 
-    c1->Print("FlowVsPower.pdf");
+    c1->Print("FlowVsPower.png");
 
 
 
-    TCanvas *c2 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 700, 500);
+    TCanvas *c2 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 1500, 500);
+    c2 ->SetGrid();
 
     auto graph2 = new TGraph(n,flow,head);
-    graph2->SetTitle("Flujo vs Potencia;Flujo (m^3/s); Cabeza (m)");
+    graph2->SetTitle("Flujo vs Cabeza;Flujo (m^3/s); Cabeza (m)");
 
     // Make the plot estetically better
     graph2->SetMarkerStyle(kOpenCircle);
@@ -79,12 +80,13 @@ void macro1(){
 
     graph2->Draw("AC*");
 
-    c2->Print("FlowVsHead.pdf");
+    c2->Print("FlowVsHead.png");
 
-    TCanvas *c3 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 700, 500);
+    TCanvas *c3 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 1500, 500);
+    c3->SetGrid();
 
     auto graph3 = new TGraph(n,flow,efficiency);
-    graph3->SetTitle("Flujo vs Potencia;Flujo (m^3/s); Eficiencia (%)");
+    graph3->SetTitle("Flujo vs Eficiencia;Flujo (m^3/s); Eficiencia (%)");
 
     // Make the plot estetically better
     graph3->SetMarkerStyle(kOpenCircle);
@@ -94,6 +96,6 @@ void macro1(){
 
     graph3->Draw("AC*");
 
-    c3->Print("FlowVsEfficiency.pdf");
+    c3->Print("FlowVsEfficiency.png");
 }
 

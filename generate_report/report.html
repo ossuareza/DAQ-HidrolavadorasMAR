@@ -19,6 +19,12 @@
 			overflow: hidden;
 
 		}
+.break-after {
+    page-break-after: always;
+}
+		.new-page {
+		page-break-before: always;
+		}
 		td , th{
 			padding: 15px 20px;
 			border-bottom: 1px solid #000000;
@@ -45,7 +51,6 @@
 
 <body>
 <table cellspacing="0" border="0">
-	<colgroup span="8" width="137"></colgroup>
 	<tr>
 		<td colspan=2 height="50"><img src="logo.png" alt="Hidrolavadoras MAR Image" width="200" height="34"></td>
 		<td class="td_top" align="center">Velocidad n (rpm)<br><br>0</td>
@@ -148,40 +153,19 @@
 		<td >0</td>
 		<td align="center" >m</td>
 		</tr>
-	<tr>
+	<tr class="break-after">
 		<td align="center" >Eficiencia</td>
 		<td align="center" 0</td>
 		<td align="center" >%</td>
 		</tr>
-	<tr>
-		<td colspan=8 rowspan=6 height="240" align="center" >Grafica 1</td>
+	<tr >
+		<td colspan=8 height="50" align="center" ><img src="FlowVsHead.png" alt="Hidrolavadoras MAR Image" width="900" height="300"></td>
 		</tr>
 	<tr>
+		<td colspan=8 height="50" align="center" ><img src="FlowVsEfficiency.png" alt="Hidrolavadoras MAR Image" width="900" height="300"></td>
 		</tr>
 	<tr>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
-		<td  colspan=8 rowspan=8 height="320" align="center" >Grafica 2</td>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
-		</tr>
-	<tr>
+		<td colspan=8 height="50" align="center" ><img src="FlowVsEfficiency.png" alt="Hidrolavadoras MAR Image" width="900" height="300"></td>
 		</tr>
 </table>
 <!-- ************************************************************************** -->
