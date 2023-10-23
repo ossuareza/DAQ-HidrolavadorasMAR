@@ -5,17 +5,15 @@
 
 	<style type="text/css">
 		/* body,div,table,thead,tbody,tfoot,tr,th,td,p { font-family:"Calibri"; font-size:x-small }
-		a.comment-indicator:hover + comment { background:#ffd; position:absolute; display:block; border:1px solid black; padding:0.5em;  } 
-		a.comment-indicator { background:red; display:inline-block; border:1px solid black; width:0.5em; height:0.5em;  } 
+		a.comment-indicator:hover + comment { background:#ffd; position:absolute; display:block; padding:0.5em;  } 
+		a.comment-indicator { background:red; display:inline-block; width:0.5em; height:0.5em;  } 
 		comment { display:none;  }  */
 
 		@import url('https://fonts.googleapis.com/css?family=Montserrat|Open+Sans|Roboto');
 		table{
-			width: 60%; 
+			width: 100%; 
 			border-collapse: collapse;
-			border-spacing: 0;
-			border-radius: 12px 12px 0 0;
-			overflow: hidden;
+			border: 1px solid black;
 
 		}
 .break-after {
@@ -26,9 +24,8 @@
 		}
 		td , th{
 			padding: 15px 20px;
-			border-bottom: 1px solid #000000;
-			border-left: 1px solid #000000; 
-			border-right: 1px solid #000000
+			border-collapse: collapse;
+			border: 1px solid black;;
 
 		}
 		.td_top{
@@ -49,7 +46,7 @@
 
 
 <body>
-<table style="width:100%" cellspacing="0" border="0">
+<table cellspacing="0" >
 	<colgroup span="8" ></colgroup>
 	<tr>
 		<td colspan=2 height="50"><img src="logo.png" alt="Hidrolavadoras MAR Image" width="200" height="34"></td>
@@ -159,7 +156,7 @@
 		<td align="center" >%</td>
 		</tr>
 </table>
-<table class="new-page" style="width:100%" cellspacing="0" border="0">
+<table class="new-page" cellspacing="0" >
 	<colgroup span="8" width="137"></colgroup>
 	<tr >
 		<td colspan=8 height="50" align="center" ><img src="FlowVsPower.png" alt="Flujo vs Potencia" width="900" height="300"></td>
