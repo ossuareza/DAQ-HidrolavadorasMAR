@@ -4,6 +4,7 @@
 #include "TROOT.h"
 #include "TF1.h"
 #include <TGraph.h>
+#include <TMultiGraph.h>
 
 #include <iostream>
 #include <fstream>
@@ -11,7 +12,7 @@
 
 
 
-Double_t *graph_generator(const char *title, int n, double *x, double *y, const char *path){
+double graph_generator(const char *title, int n, double *x, double *y, const char *path){
 
     TCanvas *c = new TCanvas("c", "Dynamic Filling Example", 200, 10, 1500, 500);
     c->SetGrid(); // Activate the grid
@@ -23,23 +24,34 @@ Double_t *graph_generator(const char *title, int n, double *x, double *y, const 
     graph->SetMarkerStyle(kOpenCircle);
     graph->SetMarkerColor(kBlack);
     // Define the way the graph is going to be plotted
-    graph->Draw("AP");
+    // graph->Draw("AP");
 
-    TF1 *fitFunction = new TF1("fitFunction", "pol3", 0, 200);
-
+    TF1 *fitFunction = new TF1("fitFunction", "pol3", 0, x[n-1]); // (func name, func type, (range))
     // Modify line
     fitFunction->SetLineColor(kBlue);
     
     // Perform the fit
     graph->Fit(fitFunction, "Q"); // quiet mode
+    double maximumY = fitFunction->GetMaximum(); // Find the maximum
+    double maximumX = fitFunction->GetMaximumX();
+
+    auto graph2 = new TGraph();
+    graph2->SetPoint(0, maximumX, maximumY);
+    graph2->SetMarkerColor(kRed);
+    graph2->SetMarkerStyle(kFullCircle);
+
+    auto mg = new TMultiGraph();
+    mg->Add(graph);
+    mg->Add(graph2);
+    mg->Draw("AP");
 
     // Extract the equation
-    TF1 *myfunc = graph->GetFunction("fitFunction");
-    Double_t *parameters = myfunc->GetParameters();
+    // TF1 *myfunc = graph->GetFunction("fitFunction");
+    // Double_t *parameters = myfunc->GetParameters(); // Get coefficients from the function
 
     c->Print(path);
 
-    return parameters;
+    return maximumY;
 }
 
 
@@ -77,14 +89,17 @@ void plotter(){
     int n = 10;
     const char* title1 = "Flujo vs Potencia;Flujo (m^3/s);Potencia (kW)";
     const char* path1 = "../data/imgs/FlowVsPower.png";
-    Double_t *parameters = graph_generator(title1, n, flow, pump_power, path1);
+    double maximum = graph_generator(title1, n, flow, pump_power, path1);
+    std::cout << maximum << std::endl;
 
     const char* title2 = "Flujo vs Cabeza;Flujo (m^3/s); Cabeza (m)";
     const char* path2 = "../data/imgs/FlowVsHead.png";
-    Double_t *parameters2 = graph_generator(title1, n, flow, head, path2);
+    maximum = graph_generator(title1, n, flow, head, path2);
+    std::cout << maximum << std::endl;
 
     const char* title3 = "Flujo vs Eficiencia;Flujo (m^3/s); Eficiencia (%)";
     const char* path3 = "../data/imgs/FlowVsEfficiency.png";
-    Double_t *parameters3 = graph_generator(title1, n, flow, efficiency, path3);
+    maximum = graph_generator(title1, n, flow, efficiency, path3);
+    std::cout << maximum << std::endl;
 }
 

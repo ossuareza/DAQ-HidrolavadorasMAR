@@ -9,8 +9,6 @@ void generate_pdf(long test_number){
 
     wkhtmltopdf_init(false);
 
-   
-
     wkhtmltopdf_global_settings* gs = wkhtmltopdf_create_global_settings();
     wkhtmltopdf_object_settings* os = wkhtmltopdf_create_object_settings();
 
