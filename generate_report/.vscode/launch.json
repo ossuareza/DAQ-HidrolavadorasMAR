@@ -5,7 +5,7 @@
             "name": "C++ Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/generate_report", // Replace with your program's name
+            "program": "${workspaceFolder}/src/generate_report", // Replace with your program's name
             "args": [],
             // "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

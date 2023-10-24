@@ -1,5 +1,5 @@
 #!/bin/bash
 
-root -q macro1.C
+root -q -l -b plotter.C
 
 ./generate_report

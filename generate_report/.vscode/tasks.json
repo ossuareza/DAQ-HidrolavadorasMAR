@@ -7,9 +7,10 @@
             "args": [
                 "-g",
                 "-o",
-                "generate_report",
-                "generate_report.cpp",
-                "generate_html.cpp",
+                "src/generate_report",
+                "src/main.cpp",
+                "src/generate_html.cpp",
+                "src/generate_pdf.cpp",
                 "-I/usr/local/include",
                 "-lwkhtmltox",
                 "-std=c++11"
