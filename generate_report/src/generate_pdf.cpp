@@ -18,14 +18,14 @@ void generate_pdf(long test_number){
     wkhtmltopdf_set_object_setting(os, "useLocalLinks", "true");
 
     wkhtmltopdf_converter* converter = wkhtmltopdf_create_converter(gs);
-    wkhtmltopdf_set_object_setting(os, "page", "data/html/report_model.html");
+    wkhtmltopdf_set_object_setting(os, "page", "../data/html/report_model.html"); // Two dots because the bash script run everything from src
     wkhtmltopdf_add_object(converter, os, NULL);
     wkhtmltopdf_convert(converter);
 
     const unsigned char* pdfData;
     const int pdfLength = wkhtmltopdf_get_output(converter, &pdfData);
     
-    std::string outputPath = "data/report/report_";
+    std::string outputPath = "../data/report/report_"; // Two dots because the bash script run everything from src
     outputPath += std::to_string(test_number);
     outputPath += ".pdf";
     std::ofstream outputFile(outputPath, std::ios::binary);

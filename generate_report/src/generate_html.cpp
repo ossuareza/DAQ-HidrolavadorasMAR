@@ -16,7 +16,7 @@ int generate_html(characterized_pump pump, int measure_n){
 
     std::ofstream myfile;
     
-    myfile.open ("data/html/report_model.html");
+    myfile.open ("../data/html/report_model.html"); // Two dots because the bash script run everything from src
 
     if (myfile.is_open())
     {

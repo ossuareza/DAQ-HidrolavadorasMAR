@@ -14,25 +14,26 @@
 Double_t *graph_generator(const char *title, int n, double *x, double *y, const char *path){
 
     TCanvas *c = new TCanvas("c", "Dynamic Filling Example", 200, 10, 1500, 500);
-    c->SetGrid();
-    auto graph = new TGraph(n,x,y);
+    c->SetGrid(); // Activate the grid
+    auto graph = new TGraph(n,x,y); // define the graph with the points
 
     graph->SetTitle(title);
 
-    // Make the plot estetically better
+    // Modify marker
     graph->SetMarkerStyle(kOpenCircle);
     graph->SetMarkerColor(kBlack);
-    
+    // Define the way the graph is going to be plotted
     graph->Draw("AP");
 
     TF1 *fitFunction = new TF1("fitFunction", "pol3", 0, 200);
 
+    // Modify line
     fitFunction->SetLineColor(kBlue);
     
     // Perform the fit
-    graph->Fit(fitFunction, "Q"); // "Q" for quiet mode
+    graph->Fit(fitFunction, "Q"); // quiet mode
 
-    // Extract fit results
+    // Extract the equation
     TF1 *myfunc = graph->GetFunction("fitFunction");
     Double_t *parameters = myfunc->GetParameters();
 
@@ -71,85 +72,19 @@ void plotter(){
             {55, 54.5, 54, 53, 52.5, 51.7, 50, 48.5, 46, 44};
     double efficiency[n_points]=
             {0,10,20,20,25,30,40,70,60,50};
-
-
-    // TCanvas *c1 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 1500, 500);
-    // c1->SetGrid();
-    // int n = 10;
-    // auto graph = new TGraph(n,flow,head);
-
-    // graph->SetTitle("Flujo vs Potencia;Flujo (m^3/s);Potencia (kW)");
-
-    // // Make the plot estetically better
-    // graph->SetMarkerStyle(kOpenCircle);
-    // graph->SetMarkerColor(kBlack);
-    
-    // graph->Draw("AP");
-
-    // TF1 *fitFunction = new TF1("fitFunction", "pol3", 0, 200);
-
-    // fitFunction->SetLineColor(kBlue);
-    
-    // // Perform the fit
-    // graph->Fit(fitFunction, "Q"); // "Q" for quiet mode
-
-    // // Extract fit results
-    // TF1 *myfunc = graph->GetFunction("fitFunction");
-    // Double_t *parameters = myfunc->GetParameters();
-
-
-    /* TCanvas *c1 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 1500, 500);
-    c1->SetGrid();
-    int n = 10;
-    auto graph = new TGraph(n,flow,head);
-
-    Double_t *parameters = graph_generator(graph);
-
-
-    std::cout << parameters[0] << parameters[1] << parameters[2] << parameters[3] <<parameters[4] <<std::endl;
-
-    c1->Print("data/imgs/FlowVsPower.png"); */
+            
 
     int n = 10;
     const char* title1 = "Flujo vs Potencia;Flujo (m^3/s);Potencia (kW)";
-    const char* path1 = "data/imgs/FlowVsPower.png";
+    const char* path1 = "../data/imgs/FlowVsPower.png";
     Double_t *parameters = graph_generator(title1, n, flow, pump_power, path1);
 
     const char* title2 = "Flujo vs Cabeza;Flujo (m^3/s); Cabeza (m)";
-    const char* path2 = "data/imgs/FlowVsHead.png";
+    const char* path2 = "../data/imgs/FlowVsHead.png";
     Double_t *parameters2 = graph_generator(title1, n, flow, head, path2);
 
     const char* title3 = "Flujo vs Eficiencia;Flujo (m^3/s); Eficiencia (%)";
-    const char* path3 = "data/imgs/FlowVsEfficiency.png";
+    const char* path3 = "../data/imgs/FlowVsEfficiency.png";
     Double_t *parameters3 = graph_generator(title1, n, flow, efficiency, path3);
-
-
-    // TCanvas *c2 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 1500, 500);
-    // c2 ->SetGrid();
-
-    // auto graph2 = new TGraph(n,flow,head);
-    // graph2->SetTitle("Flujo vs Cabeza;Flujo (m^3/s); Cabeza (m)");
-
-    // // Make the plot estetically better
-    // graph2->SetMarkerStyle(kOpenCircle);
-    // graph2->SetMarkerColor(kBlue);
-    // graph2->Draw("AP");
-
-    // c2->Print("data/imgs/FlowVsHead.png");
-
-    // TCanvas *c3 = new TCanvas("c1", "Dynamic Filling Example", 200, 10, 1500, 500);
-    // c3->SetGrid();
-
-    // auto graph3 = new TGraph(n,flow,efficiency);
-    // graph3->SetTitle("Flujo vs Eficiencia;Flujo (m^3/s); Eficiencia (%)");
-
-    // // Make the plot estetically better
-    // graph3->SetMarkerStyle(kOpenCircle);
-    // graph3->SetMarkerColor(kBlue);
-    // graph3->SetLineColor(kBlue);
-    // graph3->SetFillColor(0);
-
-    // graph3->Draw("AP");
-    // c3->Print("data/imgs/FlowVsEfficiency.png");
 }
 
