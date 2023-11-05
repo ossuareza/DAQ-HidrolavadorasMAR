@@ -60,12 +60,12 @@ def generate_html(pump):
         <tr class="td_top">
             <td height="50" colspan=2 align="left">Fecha de la prueba:<br><br>{pump["date"]}</td>
             <td colspan=2 align="left">Encargado:<br><br>{pump["delegate"]}</td>
-            <td colspan=2 align="left">Número de modelo de la bomba:<br>{pump["model"]}</td>
+            <td colspan=2 align="left">Modelo de la bomba:<br>{pump["model"]}</td>
             <td colspan=2 align="left">Test número:<br><br>{pump["test_number"]}</td>
             </tr>
         <tr>
             <td rowspan=2 align="center">Medición No.</td>
-            <td rowspan=2 align="center">Flujo Q(m²/s)</td>
+            <td rowspan=2 align="center">Flujo Q(m³/s)</td>
             <td colspan=4 align="center">Cabeza</td>
             <td rowspan=2 align="center">Potencia de entrada P(kW)</td>
             <td rowspan=2 align="center">Eficiencia de la bomba (%)</td>

@@ -38,9 +38,9 @@ characterized_pump["final_flow"] =  characterized_pump["flow"][index]
 characterized_pump["final_head"] =  characterized_pump["pressure"][index]
 characterized_pump["final_efficiency"] =  characterized_pump["pump_efficiency"][index]
 
-plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (m^3/s)","Potencia (kW)")
-plotter(characterized_pump["flow"], characterized_pump["pressure"], "FlowVsHead.png","Flujo vs Cabeza","Flujo (m^3/s)","Cabeza (m)")
-plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"], "FlowVsEfficiency.png","Flujo vs Eficiencia","Flujo (m^3/s)","Eficiencia (%)")
+plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (m³/s)","Potencia (kW)")
+plotter(characterized_pump["flow"], characterized_pump["pressure"], "FlowVsHead.png","Flujo vs Cabeza","Flujo (m³/s)","Cabeza (m)")
+plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"], "FlowVsEfficiency.png","Flujo vs Eficiencia","Flujo (m³/s)","Eficiencia (%)")
 
 generate_html(characterized_pump)
 
