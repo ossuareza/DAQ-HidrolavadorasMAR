@@ -1,11 +1,14 @@
 from guizero import App, TextBox, PushButton, Text, info, error, Picture, ButtonGroup, Box
 
-def change_screen(screen):
+def change_screen(screens):
+
+    global screen_counter
+    screen_counter += 1
     # Hide all screens
     for s in screens:
         s.hide()
     # Show the selected screen
-    screen.show()
+    screens[screen_counter % len(screens)].show()
 
 # Function to update measurements
 def update_measurements():
@@ -75,43 +78,18 @@ def high_pressure_alert():
 # Create a button to trigger high pressure alert
 alert_button = PushButton(show_measurements, high_pressure_alert, text="Alerta de Presión Alta", grid=[0,10])
 
+
+# Define a list of screens
+screens = [initial_information, show_measurements, generate_report]
+
+screen_counter = -1
+
+# Initially, hide all screens except the first one
+change_screen(screens)
+
+screen_changer = PushButton(app, text="Show Screen 1", command=lambda: change_screen(screens))
 # Display the app
 app.display()
 
 
-
-
-from guizero import App, Box, PushButton
-
-def show_screen(screen):
-    # Hide all screens
-    for s in screens:
-        s.hide()
-    # Show the selected screen
-    screen.show()
-
-app = App("Multi-Screen Example", width=400, height=300)
-
-# Create screens using Box widgets
-screen1 = Box(app, layout="grid")
-screen2 = Box(app, layout="grid")
-screen3 = Box(app, layout="grid")
-
-# Add widgets to each screen
-label1 = PushButton(screen1, text="Screen 1")
-label2 = PushButton(screen2, text="Screen 2")
-label3 = PushButton(screen3, text="Screen 3")
-
-# Define a list of screens
-screens = [screen1, screen2, screen3]
-
-# Initially, hide all screens except the first one
-show_screen(screen1)
-
-# Create buttons to switch between screens
-button1 = PushButton(app, text="Show Screen 1", command=lambda: show_screen(screen1))
-button2 = PushButton(app, text="Show Screen 2", command=lambda: show_screen(screen2))
-button3 = PushButton(app, text="Show Screen 3", command=lambda: show_screen(screen3))
-
-app.display()
 
