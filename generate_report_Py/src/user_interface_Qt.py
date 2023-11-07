@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QFont
 
@@ -9,6 +9,8 @@ from generate_pdf import generate_pdf
 from plotter import plotter
 
 import time
+# !import Adafruit_ADS1x15
+# !import RPi.GPIO as GPIO
 
 characterized_pump = {
     "pump_type": "",
@@ -35,6 +37,8 @@ characterized_pump = {
     "total_measurements": 0,
     "actual_measurement": 0
 }
+
+# !adc = Adafruit_ADS1x15.ADS1115()
 
 class Window(QtWidgets.QMainWindow):
     def __init__(self, path, screen_width):
@@ -90,25 +94,58 @@ class FirstWindow(Window):
         characterized_pump["pump_model"] = self.lE_4_pump_model.text()
         characterized_pump["total_measurements"] = self.measurements.text()
 
+        
+
         print(characterized_pump)
 
 class SecondWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
+
+        self.alerts.setText("Abra la válvula completamente y presione el botón de avance")
+        self.alerts.setStyleSheet(f''' color: green ''')
+
         self.pushButton.clicked.connect(self.goToNextTask)
+        # !GPIO.setmode(GPIO.BCM)
+        flowmeter_pin = 7
+        # !GPIO.setup(flowmeter_pin, GPIO.IN)
+        self.flowmeter_pulses = 0
+        # !GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=self.measuringFlow())
+        self.actual_flow = 0
+        self.flow_measurement_started = False
+        self.start_time_flow_measurement = 0
+        self.flow = 0
+        self.pulses_per_liter = 0 #! Define conversion factor
     
     def goToNextTask(self):
+        
+        #! En la primera medición se debe tener la válvula completamente abierta
+
+        #! Definir caudales deseados a partir del caudal de la válvula totalmente abierta
+
+        #! Después se debe hacer el sistema que espera a que se alcance el flujo esperado e intercambiar las señales de alerta
+
+        # measurements_window.pushButton.setEnable(False)
+        # QTimer.singleShot(5000, lambda: measurements_window.pushButton.setDisabled(False))
+
+        if not self.checkStability(): #! Define function
+            pass
 
         self.takeMeasurement(characterized_pump["actual_measurement"])
-
+            
         characterized_pump["actual_measurement"] += 1
 
         if characterized_pump["actual_measurement"] == characterized_pump["total_measurements"]:
             widget.setCurrentIndex(2)
+            time.sleep(3)
+            print("Holis")
+
+    def takeMeasurement(self, counter):
+        pass
 
     def checkStability(self):
 
-        self.alerts.setText("Midiendo estabilidad")
+        self.alerts.setText("Midiendo estabilidad del sistema")
         self.alerts.setStyleSheet(f''' color: green ''')
 
         gain = 1
@@ -122,22 +159,48 @@ class SecondWindow(Window):
 
         average_m_1 = 0
         average_m_2 = 0
-        counter = 0
-
+        data_counter = 0
+        start_count_stabilization_time = time.time()
+        start_checking_process_time = time.time()
         while True:
+            
             pressure_1 = 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767)
             pressure_2 = 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767)
 
             average_m_1 += pressure_1
             average_m_2 += pressure_2
 
-            counter += 1
+            data_counter += 1
 
             # Search for unstable values
-            if abs(pressure_1 - average_m_1/counter) > 0.06 * average_m_1/counter or abs(pressure_2 - average_m_2/counter) > 0.06 * average_m_2/counter:
+            if abs(pressure_1 - average_m_1/data_counter) > 0.06 * average_m_1/data_counter or abs(pressure_2 - average_m_2/data_counter) > 0.06 * average_m_2/data_counter:
                 average_m_1 = 0
                 average_m_2 = 0
-                counter = 0
+                data_counter = 0
+                start_count_stabilization_time = time.time()
+
+                if time.time() - start_checking_process_time >= 60:
+                    self.alerts.setText("No se ha podido hallar estabilidad")
+                    self.alerts.setStyleSheet(f''' color: red ''')
+                    return False
+            
+            if time.time() - start_count_stabilization_time >= 10:
+                self.alerts.setText("Se ha hallado la estabilidad")
+                self.alerts.setStyleSheet(f''' color: green ''')
+                return True
+            
+    def measuringFlow(self):
+        if not self.flow_measurement_started:
+            self.flow_measurement_started = True
+            self.start_time_flow_measurement = time.time()
+            self.flowmeter_pulses += 1
+        else:
+            self.flowmeter_pulses += 1
+        
+        if time.time() - self.start_time_flow_measurement >= 1:
+            self.flow = self.flowmeter_pulses / self.pulses_per_liter * 60
+            
+
 
             
 class ThirdWindow(Window):
@@ -204,5 +267,14 @@ widget.addWidget(measurements_window)
 
 
 
+
 widget.show()
+
+# while True:
+#     if widget.currentIndex() == 2:
+#         measurements_window.pushButton.setEnable(False)
+#         QTimer.singleShot(5000, lambda: measurements_window.pushButton.setDisabled(False))
+#         break
+
 sys.exit(app.exec_())
+
