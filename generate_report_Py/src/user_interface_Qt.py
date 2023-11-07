@@ -36,31 +36,31 @@ class Window(QtWidgets.QMainWindow):
                     element.widget().setStyleSheet(f''' font-size: {button_font_size}px; ''')
                 
                 if "alerts" in element.widget().objectName():
-                    element.widget().setStyleSheet(f''' font-size: {title_font_size}px; ''')
-                    element.widget().setStyleSheet("color: green")
+                    element.widget().setStyleSheet(f''' font-size: {int(title_font_size* 3/2)}px; color: green''')
+                    # element.widget().setStyleSheet("color: green")
             self.defineFontSizes(element)
 
-    
+
 
 class FirstWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
         self.pushButton.clicked.connect(self.goToNextScreen)
-        
-        self.order_service
-        self.delegate
-        self.date
-        self.pump_model
-        self.measurements
+
+        # self.order_service
+        # self.delegate
+        # self.date
+        # self.pump_model
+        # self.measurements
     
     def goToNextScreen(self):
         widget.setCurrentIndex(1)
 
-        self.order_service = self.order_service.text()
-        self.delegate = self.delegate.text()
-        self.date = self.date.text()
-        self.pump_model = self.pump_model.text()
-        self.measurements = self.measurements.text()
+        # self.order_service = self.order_service.text()
+        # self.delegate = self.delegate.text()
+        # self.date = self.date.text()
+        # self.pump_model = self.pump_model.text()
+        # self.measurements = self.measurements.text()
 
 class SecondWindow(Window):
     def __init__(self, path, screen_width):
@@ -71,7 +71,33 @@ class SecondWindow(Window):
         widget.setCurrentIndex(0)
         
 
+
+
+characterized_pump = {
+    "motor_speed" : 0, 
+    "power" : 0, 
+    "parking_slot" : 0,
+    "test_number" : 0,
+    "service_order" : "", 
+    "date" : "", 
+    "delegate" : "", 
+    "model" : "",
+    "flow" : [], 
+    "pressure" : [], 
+    "velocity" : [], 
+    "elevation" : [], 
+    "pump_total" : [], 
+    "pump_power" : [], 
+    "pump_efficiency" : [],
+    "final_flow" : 0,
+    "final_head" : 0, 
+    "final_efficiency" : 0
+}
+
+
 app = QtWidgets.QApplication(sys.argv)
+
+
 
 screen = app.primaryScreen()
 screen_width = screen.availableGeometry().width()
@@ -82,8 +108,7 @@ screen_height = screen.availableGeometry().height()
 
 widget = QtWidgets.QStackedWidget()
 information_window = FirstWindow("Information_screen.ui", screen_width)
-# information_window.defineFontSizes(information_window.centralwidget, screen_width)
-
+# information_window.pushButton.clicked.connect(getInformation)
 widget.addWidget(information_window)
 
 measurements_window = SecondWindow("Measurements_screen.ui", screen_width)

@@ -65,13 +65,13 @@ def generate_html(pump):
             </tr>
         <tr>
             <td rowspan=2 align="center">Medición No.</td>
-            <td rowspan=2 align="center">Flujo Q(m³/s)</td>
+            <td rowspan=2 align="center">Flujo Q(L/min)</td>
             <td colspan=4 align="center">Cabeza</td>
             <td rowspan=2 align="center">Potencia de entrada P(kW)</td>
             <td rowspan=2 align="center">Eficiencia de la bomba (%)</td>
         </tr>
         <tr>
-            <td align="center">Presión estática p(kPa)</td>
+            <td align="center">Presión estática p(psi)</td>
             <td align="center">Velocidad h_v(m)</td>
             <td align="center">Elevación z(m)</td>
             <td align="center">Cabeza total H(m)</td>
@@ -100,7 +100,7 @@ def generate_html(pump):
         <tr>
             <td align="center" >Flujo</td>
             <td align="center" >{pump["final_flow"]}</td>
-            <td align="center" >m²/s</td>
+            <td align="center" >L/min</td>
             </tr>
         <tr>
             <td align="center" >Cabeza</td>
