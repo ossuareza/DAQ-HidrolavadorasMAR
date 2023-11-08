@@ -12,6 +12,9 @@ import time
 # !import Adafruit_ADS1x15
 # !import RPi.GPIO as GPIO
 
+import numpy as np
+
+
 characterized_pump = {
     "pump_type": "",
     "service_order" : "", 
@@ -34,8 +37,7 @@ characterized_pump = {
     "final_flow" : 0,
     "final_head" : 0, 
     "final_efficiency" : 0,
-    "total_measurements": 0,
-    "actual_measurement": 0
+    "total_measurements": 0
 }
 
 # !adc = Adafruit_ADS1x15.ADS1115()
@@ -96,18 +98,26 @@ class FirstWindow(Window):
 
         
 
+        
+
         print(characterized_pump)
 
 class SecondWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
 
-        self.alerts.setText("Abra la válvula completamente y presione el botón de avance")
+        self.alerts.setText("Abra la válvula completamente")
         self.alerts.setStyleSheet(f''' color: green ''')
 
         self.pushButton.clicked.connect(self.goToNextTask)
         # !GPIO.setmode(GPIO.BCM)
-        flowmeter_pin = 7
+
+        if characterized_pump["pump_type"] == "roto":
+            flowmeter_pin = 7 #! Definir bien los pines
+        elif characterized_pump["pump_type"] == "triplex":
+            flowmeter_pin = 7
+
+
         # !GPIO.setup(flowmeter_pin, GPIO.IN)
         self.flowmeter_pulses = 0
         # !GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=self.measuringFlow())
@@ -116,29 +126,46 @@ class SecondWindow(Window):
         self.start_time_flow_measurement = 0
         self.flow = 0
         self.pulses_per_liter = 0 #! Define conversion factor
-    
+
+        self.max_flow = 0
+
+        self.actual_measurement = 0
+
+        self.different_apertures = 0
+
     def goToNextTask(self):
         
         #! En la primera medición se debe tener la válvula completamente abierta
 
-        #! Definir caudales deseados a partir del caudal de la válvula totalmente abierta
+        if self.actual_measurement == 0:
+
+            self.max_flow = self.flow
+
+            #! Definir caudales deseados a partir del caudal de la válvula totalmente abierta
+
+            self.different_apertures = self.max_flow * np.linspace(1, 0.4, characterized_pump["total_measurements"])
+
+        if self.actual_measurement % 2 == 0:
+            self.alerts.setText("Abra la válvula completamente")
+            while self.flow <= self.different_apertures[self.actual_measurement // 2]:
+                self.pushButton.setEnable(False)
+            
+            self.pushButton.setDisabled(False)
 
         #! Después se debe hacer el sistema que espera a que se alcance el flujo esperado e intercambiar las señales de alerta
 
-        # measurements_window.pushButton.setEnable(False)
-        # QTimer.singleShot(5000, lambda: measurements_window.pushButton.setDisabled(False))
+        elif self.actual_measurement % 2 == 1:
 
-        if not self.checkStability(): #! Define function
-            pass
+            if not self.checkStability(): #! Define function
+                pass
 
-        self.takeMeasurement(characterized_pump["actual_measurement"])
-            
-        characterized_pump["actual_measurement"] += 1
+            self.takeMeasurement(self.actual_measurement)
+                
+            self.actual_measurement += 1
 
-        if characterized_pump["actual_measurement"] == characterized_pump["total_measurements"]:
+        if self.actual_measurement // 2 == characterized_pump["total_measurements"]:
             widget.setCurrentIndex(2)
-            time.sleep(3)
-            print("Holis")
+            
 
     def takeMeasurement(self, counter):
         pass
@@ -162,6 +189,7 @@ class SecondWindow(Window):
         data_counter = 0
         start_count_stabilization_time = time.time()
         start_checking_process_time = time.time()
+
         while True:
             
             pressure_1 = 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767)
@@ -199,6 +227,7 @@ class SecondWindow(Window):
         
         if time.time() - self.start_time_flow_measurement >= 1:
             self.flow = self.flowmeter_pulses / self.pulses_per_liter * 60
+            self.flow_measurement_started = False
             
 
 
