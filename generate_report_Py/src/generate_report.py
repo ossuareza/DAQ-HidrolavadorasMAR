@@ -39,13 +39,14 @@ characterized_pump["final_flow"] =  characterized_pump["flow"][index]
 characterized_pump["final_head"] =  characterized_pump["pressure"][index]
 characterized_pump["final_efficiency"] =  characterized_pump["pump_efficiency"][index]
 
-# Generate the graphs of power, pressure, efficiency vs flow
-plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (L/min)","Potencia (kW)")
-plotter(characterized_pump["flow"], characterized_pump["pressure"], "FlowVsHead.png","Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)")
-plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"], "FlowVsEfficiency.png","Flujo vs Eficiencia","Flujo (L/min)","Eficiencia (%)")
+def generate_report(characterized_pump):
+    # Generate the graphs of power, pressure, efficiency vs flow
+    plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (L/min)","Potencia (kW)")
+    plotter(characterized_pump["flow"], characterized_pump["pressure"], "FlowVsHead.png","Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)")
+    plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"], "FlowVsEfficiency.png","Flujo vs Eficiencia","Flujo (L/min)","Eficiencia (%)")
 
-# Generate a html file that is going to be used as a base for the pdf generation
-generate_html(characterized_pump)
+    # Generate a html file that is going to be used as a base for the pdf generation
+    generate_html(characterized_pump)
 
-# Generate the final report in pdf
-generate_pdf(characterized_pump["test_number"])
+    # Generate the final report in pdf
+    generate_pdf(characterized_pump["test_number"])

@@ -40,7 +40,7 @@
        <number>0</number>
       </property>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,2,0,3,1">
         <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
@@ -55,9 +55,9 @@
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label_5">
+         <widget class="QLabel" name="logo">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -111,7 +111,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Caracterizador de Hidrolavadoras</string>
+           <string>Caracterizador de sistemas de presión</string>
           </property>
          </widget>
         </item>
@@ -323,7 +323,14 @@
          <widget class="QLineEdit" name="lE_4_pump_model"/>
         </item>
         <item row="4" column="2">
-         <widget class="QSpinBox" name="measurements"/>
+         <widget class="QSpinBox" name="measurements">
+          <property name="minimum">
+           <number>5</number>
+          </property>
+          <property name="maximum">
+           <number>10</number>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
