@@ -274,6 +274,11 @@ class SecondWindow(Window):
 
             # self.worker_on_thread.moveToThread(self.thread1)
 
+            # self.thread2 = QThread()
+
+            self.worker_on_thread = workerOnThread()
+            self.worker_on_thread.moveToThread(self.thread1)
+
             self.thread1.started.connect(self.worker_on_thread.measurementsAverage)
             self.worker_on_thread.finished.connect(self.thread1.quit)
             self.worker_on_thread.finished.connect(self.worker_on_thread.deleteLater)
@@ -477,10 +482,11 @@ class workerOnThread(QObject):
 
     finished = pyqtSignal()
     
+    progress = pyqtSignal(float)
+    flag = pyqtSignal(bool)
 
     def check(self):
-        progress = pyqtSignal(float)
-        flag = pyqtSignal(bool)
+        
         gain = 1
         if characterized_pump["pump_type"] == "roto": #!Change pin numbers            
             sensor_1_pin = 0
