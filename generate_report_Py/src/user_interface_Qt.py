@@ -11,12 +11,16 @@ from generate_html import generate_html
 from generate_pdf import generate_pdf
 from plotter import plotter
 
+# import serial
+# import modbus_tk.defines as cst
+# from modbus_tk import modbus_rtu
+
 import time
 # !import Adafruit_ADS1x15
 # !import RPi.GPIO as GPIO
 
 import numpy as np
-
+import pandas as pd
 
 characterized_pump = {
     "pump_type": "",
@@ -42,6 +46,11 @@ characterized_pump = {
     "final_efficiency" : 0,
     "total_measurements": 0
 }
+
+
+water_density_df = pd.read_excel("data/density/Densidad_agua.xlsx") # Load table for water densities at different temperatures
+
+
 
 # !adc = Adafruit_ADS1x15.ADS1115()
 
@@ -83,7 +92,6 @@ class Window(QtWidgets.QMainWindow):
             self.defineFontSizes(element)
 
 
-
 class FirstWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
@@ -107,7 +115,7 @@ class SecondWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
 
-        self.alerts.setText("Abra la válvula completamente")
+        self.alerts.setText("Preparado para empezar con la rutina de medición")
         self.alerts.setStyleSheet(f''' color: green ''')
         
 
@@ -137,30 +145,37 @@ class SecondWindow(Window):
 
         self.max_flow = 0
 
+        # self.pressure_in = 0
+        # self.pressure_out = 0
+        # self.power = 0
+        # self.temperature = 0
+
         self.actual_step = 0
         self.progressBar.setMaximum(100)
         self.progressBar.setValue(0)
-        # self.progressBar.setFormat("%.02f %%" % 0)
 
         self.different_apertures = []
 
-        self.takeMeasurements()
+        self.timer=QTimer(self)
+        self.timer.timeout.connect(self.defineButtonState)
+        self.timer.timeout.connect(self.takeSensorsData)
+        
+        self.timer.start(1000)
 
         self.contador_random = 0
 
-    def takeMeasurements(self):
-        self.timer=QTimer(self)
-        self.timer.timeout.connect(self.checkSensors)
-        self.timer.start(1000)
 
-    def checkSensors(self):
+    def takeSensorsData(self):
 
-        self.lcdNumber_f.display(self.contador_random)
+        # Display sensors data on screen
+        self.lcdNumber_f.display(self.contador_random) #! Modify with the pump dictionary
         self.lcdNumber_pin.display(self.contador_random)
         self.lcdNumber_pout.display(self.contador_random)
         self.lcdNumber_pw.display(self.contador_random)
         self.lcdNumber_t.display(self.contador_random)
         
+    def defineButtonState(self):
+        # Disable pushButton while a requirement is not achieved
         if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2:
             if self.flow >= self.different_apertures[self.actual_step // 2]:
                 self.pushButton.setEnabled(True)
@@ -169,50 +184,59 @@ class SecondWindow(Window):
 
     def goToNextTask(self):
         print(f"actual_step: {self.actual_step // 2}")
+
+        # If all the measurements were taken, then go to next screen
         if self.actual_step // 2 == characterized_pump["total_measurements"]:
             widget.setCurrentIndex(2)
-            print("holi")
+            return
+        
+        # If the push button is not enabled, do not allow to execute the routines.
+        # This is necessary for the physical button connected to the Raspberry Pi
+        if not self.pushButton.isEnabled():
+            return
 
         print(f"Medición actual: {self.actual_step}")
         
-        #! En la primera medición se debe tener la válvula completamente abierta
-        if self.actual_step % 2 == 0:
+        if self.actual_step == -1:
+                
+            self.alerts.setText("Abra la válvula completamente")
+            self.alerts.setStyleSheet(f''' color: green ''')
 
-            if self.actual_step == 0:
+            self.actual_step += 1
 
-                self.max_flow = self.flow
+        elif self.actual_step == 0:
+                
+            self.alerts.setText("Midiendo caudal máximo")
+            self.alerts.setStyleSheet(f''' color: green ''')
+            # Whe the valve is completely open, take tha measured flow as the maximum flow
+            self.max_flow = self.flow
 
-                #! Definir caudales deseados a partir del caudal de la válvula totalmente abierta
+            # Define the apertures for each measurement point
+            self.different_apertures = self.max_flow * np.linspace(1, 0.4, characterized_pump["total_measurements"])
 
-                self.different_apertures = self.max_flow * np.linspace(1, 0.4, characterized_pump["total_measurements"])
+            self.actual_step += 1
 
-        
+        elif self.actual_step % 2 == 0:
+            # Show in screen the target flow
+            self.label_fo.show()
+            self.lcdNumber_fo.show()
+            self.label_fo_units.show()
+            
+            # Define target flow
+            target_flow = self.different_apertures[self.actual_step // 2]
 
-            else:
-                self.label_fo.show()
-                self.lcdNumber_fo.show()
-                self.label_fo_units.show()
-
-                target_flow = self.different_apertures[self.actual_step // 2]
-
-                self.alerts.setText(f"Cierre la válvula hasta flujo de {target_flow } L/min")
-                self.lcdNumber_fo.display(target_flow)
-                self.alerts.setStyleSheet(f''' color: green ''')
-                self.pushButton.setEnabled(False)
-
-            # while self.flow > self.different_apertures[self.actual_step // 2]: #! Definir la espera hasta que se alcance menos del flujo deseado
-            #     pass
+            # Show alerts to guide the search process of the target flow
+            self.alerts.setText(f"Cierre la válvula hasta flujo de {target_flow } L/min")
+            self.lcdNumber_fo.display(target_flow)
+            self.alerts.setStyleSheet(f''' color: green ''')
+            self.pushButton.setEnabled(False)
             
             self.actual_step += 1
 
-            #? self.pushButton.setEnabled(True)
-
-            # Hide the target flow
-            
-
-        #! Después se debe hacer el sistema que espera a que se alcance el flujo esperado e intercambiar las señales de alerta
 
         elif self.actual_step % 2 == 1:
+
+            # Hide the target flow
             self.label_fo.hide()
             self.lcdNumber_fo.hide()
             self.label_fo_units.hide()
@@ -231,24 +255,14 @@ class SecondWindow(Window):
             self.check_stability.progress.connect(self.reportProgress)
             self.check_stability.flag.connect(self.checkFinished)
                     
-            self. thread1.start() 
+            self.thread1.start() 
 
             self.thread1.finished.connect(
                 lambda: self.pushButton.setEnabled(True)
             )
-            # self.thread1.finished.connect(
-            #     lambda: self.alerts.setText(f"Cierre la válvula hasta flujo de {self.different_apertures[self.actual_step // 2 + 1] } L/min")
-            # )
 
+            self.takeMeasurement()
 
-            # if not self.checkStability(): #! Define function
-            #     pass
-
-            self.takeMeasurement(self.actual_step // 2)
-                
-        
-
-        
             
     def reportProgress(self, n):
         self.alerts.setText(f"Time: {n}")
@@ -269,10 +283,98 @@ class SecondWindow(Window):
             self.alerts.setText("No se ha podido hallar estabilidad")
             self.alerts.setStyleSheet(f''' color: red ''')
 
-    def takeMeasurement(self, counter):
+    
+    def takeMeasurement(self): #! Run it in a thread ---------------------------------------------------------------
+        measurements_counter = 0
+        start_time = time.time()
+
+        pressure_in = 0
+        pressure_out = 0
+        electrical_power = 1
+        temperature = 0
+        
+        
+
+        while time.time() - start_time < 2:
+            pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
+            pressure_out += 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
+            # electrical_power += self.measurePower()
+            # temperature += self.measureTemperature()
+
+            measurements_counter += 1
+
+        pressure_in /= measurements_counter
+        pressure_out /= measurements_counter
+        electrical_power /= measurements_counter
+        temperature /= measurements_counter
+        
+        water_density = float(water_density_df[water_density_df['Temperatura °C'] == temperature]['Densidad kg / m3'].iloc[0])
+        g = 9.79
+
+        if characterized_pump["pump_type"] == "roto":            
+            z1 = 0.851
+            z2 = 1.637
+            tube_area = ((51,8 * 10 ** (-3)) / 4) ** 2 * np.pi # m^2
+
+        elif characterized_pump["pump_type"] == "triplex": 
+            z1 = 0.435
+            z2 = 0.603
+            tube_area = ((24,8 * 10 ** (-3)) / 4) ** 2 * np.pi # m^2
+        else:
+            z1 = 0
+            z2 = 0
+            tube_area = 1
+
+        
+        flow_velocity = self.flow / tube_area / 60000 # m/s
+        losts_1 = 0 #! Waiting for the calculations
+        losts_2 = 0
+        velocity_head_1 = z1 + pressure_in  / (water_density * g) + (flow_velocity)**2 / (2*g) + losts_1
+        velocity_head_2 = z2 + pressure_out / (water_density * g) + (flow_velocity)**2 / (2*g) + losts_2
+
+        pump_total = velocity_head_2 - velocity_head_1
+
+        characterized_pump["flow"].append(self.flow)
+        characterized_pump["pressure"].append(pressure_out)
+        characterized_pump["velocity"].append(velocity_head_2)
+        characterized_pump["elevation"].append(z2 - z1)
+        characterized_pump["pump_total"].append(pump_total)
+        characterized_pump["pump_power"].append(electrical_power)
+
+        hydraulic_power = pressure_out * self.flow / 60 #! 
+        characterized_pump["pump_efficiency"].append(hydraulic_power / electrical_power * 100)
+        
+
+
+    def measurePower(self):
+
+        try:
+            # Connect to the slave
+            serial = serial.Serial(
+                                port='/dev/ttyUSB0',  #! Modify depending on the connection
+                                baudrate=9600,
+                                bytesize=8,
+                                parity='N',
+                                stopbits=1,
+                                xonxoff=0
+                                )
+            master = modbus_rtu.RtuMaster(serial)
+            master.set_timeout(2.0)
+            master.set_verbose(True)
+
+            data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+
+            power = (data[3] + (data[4] << 16)) / 10.0
+        
+        except Exception as e:
+            print(e)
+        finally:
+            master.close()
+            return power
+
+    def measureTemperature(self):
         pass
 
-            
     def measuringFlow(self):
         if not self.flow_measurement_started:
             self.flow_measurement_started = True
@@ -292,8 +394,20 @@ class ThirdWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
         self.pushButton.clicked.connect(self.goToNextTask)
+        self.progressBar.setValue(0)
+        self.alerts.setText("Listo para generar el reporte")
+        self.alerts.setStyleSheet(f''' color: green ''')
+        self.count_button_pushed = 0
     
     def goToNextTask(self):
+
+        self.count_button_pushed += 1
+        
+        if self.count_button_pushed >= 2:
+            widget.setCurrentIndex(0)
+            return
+
+        self.alerts.setText("Generando reporte")
 
         characterized_pump["flow"] = [1,2,3,4,5,6,7,8,9,10]
         characterized_pump["pressure"] =  [55, 54.5, 54, 53, 52.5, 51.7, 50, 48.5, 46, 44]
@@ -302,9 +416,7 @@ class ThirdWindow(Window):
         characterized_pump["pump_total"] =  [1,2,3,4,5,6,7,8,9,10]
         characterized_pump["pump_power"] =  [6,12,14,20,22,24,35,45,44,53]
         characterized_pump["pump_efficiency"] =  [0,10,20,20,25,30,40,70,60,50]
-
-        self.progressBar.setValue(0)
-
+        
         # Finding most efficient point
         index = characterized_pump["pump_efficiency"].index(max(characterized_pump["pump_efficiency"])) 
         characterized_pump["final_flow"] =  characterized_pump["flow"][index]
@@ -328,8 +440,12 @@ class ThirdWindow(Window):
         # Generate the final report in pdf
         generate_pdf(characterized_pump["test_number"])
         self.progressBar.setValue(100)
+
+        self.alerts.setText("Generación de reporte finalizado")
+
+
         
-        
+ #! Una idea para poder lidiar con las interrupciones de GPIO en caso de que hayan problemas       
 class GpioThread(QThread):
     event_detected = pyqtSignal(int)
     def __init__(self, *args, **kwargs):
@@ -341,6 +457,9 @@ class GpioThread(QThread):
         while True:
             self.event_detected.emit(self.queue.get())
 
+
+
+
 class checkStabilityOnThread(QObject):
 
     finished = pyqtSignal()
@@ -348,16 +467,13 @@ class checkStabilityOnThread(QObject):
     flag = pyqtSignal(bool)
 
     def check(self):
-        # print("holis")
-        # self.alerts.setText("Midiendo estabilidad del sistema")
-        # self.alerts.setStyleSheet(f''' color: green ''')
 
         gain = 1
         if characterized_pump["pump_type"] == "roto": #!Change pin numbers            
             sensor_1_pin = 0
             sensor_2_pin = 0
 
-        if characterized_pump["pump_type"] == "roto": #!Change pin numbers
+        if characterized_pump["pump_type"] == "triplex": #!Change pin numbers
             sensor_1_pin = 0
             sensor_2_pin = 0
 
@@ -369,7 +485,6 @@ class checkStabilityOnThread(QObject):
 
         while True:
             
-            # print(time.time() - start_checking_process_time)
             checking_time = time.time() - start_checking_process_time
             self.progress.emit(round(checking_time, 2))
 
@@ -394,50 +509,50 @@ class checkStabilityOnThread(QObject):
                     break
             
             if time.time() - start_count_stabilization_time >= 1:
+                
                 self.flag.emit(True)
                 self.finished.emit()
                 break
-        
-        
+    
+    
+
+        pass
+
+if __name__ == '__main__':
+
+    #! GPIO.setmode(GPIO.BCM)
+
+    app = QtWidgets.QApplication(sys.argv)
+
+    screen = app.primaryScreen()
+    screen_width = screen.availableGeometry().width()
+    screen_height = screen.availableGeometry().height()
+
+    # widget.setFixedWidth(screen_width)
+    # widget.setFixedHeight(screen_height)
+
+    widget = QtWidgets.QStackedWidget()
+    information_window = FirstWindow("Information_screen.ui", screen_width)
+    # information_window.pushButton.clicked.connect(getInformation)
+    widget.addWidget(information_window)
+
+    # !GPIO.setup(flowmeter_pin, GPIO.IN)
+    
+    # !GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=self.measuringFlow())
+
+    measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
+    widget.addWidget(measurements_window)
+
+    report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
+    widget.addWidget(report_generation_window)
+
+    widget.show()
+
+    # if stopButton.is_pressed: #Check to see if button is pressed
+    #         time.sleep(1) # wait for the hold time we want. 
+    #         if stopButton.is_pressed: #check if the user let go of the button
+    #             os.system("shutdown now -h") #shut down the Pi -h is or -r will reset
 
 
-
-app = QtWidgets.QApplication(sys.argv)
-
-
-
-screen = app.primaryScreen()
-screen_width = screen.availableGeometry().width()
-screen_height = screen.availableGeometry().height()
-
-# widget.setFixedWidth(screen_width)
-# widget.setFixedHeight(screen_height)
-
-widget = QtWidgets.QStackedWidget()
-information_window = FirstWindow("Information_screen.ui", screen_width)
-# information_window.pushButton.clicked.connect(getInformation)
-widget.addWidget(information_window)
-
-measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
-widget.addWidget(measurements_window)
-
-report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
-widget.addWidget(report_generation_window)
-
-
-# widget.setFixedWidth(screen.availableGeometry().width())
-# widget.setFixedHeight(screen.availableGeometry().height())
-
-
-
-
-widget.show()
-
-# while True:
-#     if widget.currentIndex() == 2:
-#         measurements_window.pushButton.setEnable(False)
-#         QTimer.singleShot(5000, lambda: measurements_window.pushButton.setDisabled(False))
-#         break
-
-sys.exit(app.exec_())
+    sys.exit(app.exec_())
 
