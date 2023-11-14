@@ -125,17 +125,8 @@ class SecondWindow(Window):
         self.label_fo_units.hide()
 
         self.pushButton.clicked.connect(self.goToNextTask)
-        # !GPIO.setmode(GPIO.BCM)
 
-        if characterized_pump["pump_type"] == "roto":
-            flowmeter_pin = 7 #! Definir bien los pines
-        elif characterized_pump["pump_type"] == "triplex":
-            flowmeter_pin = 7
-
-
-        # !GPIO.setup(flowmeter_pin, GPIO.IN)
         self.flowmeter_pulses = 0
-        # !GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=self.measuringFlow())
         
         self.actual_flow = 0
         self.flow_measurement_started = False
@@ -156,7 +147,9 @@ class SecondWindow(Window):
 
         self.different_apertures = []
 
-        self.timer=QTimer(self)
+        self.timer = QTimer(self)
+        self.timer_flow_measurement = QTimer(self)
+
         self.timer.timeout.connect(self.defineButtonState)
         self.timer.timeout.connect(self.takeSensorsData)
         
@@ -245,15 +238,15 @@ class SecondWindow(Window):
 
             self.thread1 = QThread()
 
-            self.check_stability = checkStabilityOnThread()
-            self.check_stability.moveToThread(self.thread1)
+            self.worker_on_thread = workerOnThread()
+            self.worker_on_thread.moveToThread(self.thread1)
 
-            self.thread1.started.connect(self.check_stability.check)
-            self.check_stability.finished.connect(self.thread1.quit)
-            self.check_stability.finished.connect(self.check_stability.deleteLater)
+            self.thread1.started.connect(self.worker_on_thread.check)
+            self.worker_on_thread.finished.connect(self.thread1.quit)
+            self.worker_on_thread.finished.connect(self.worker_on_thread.deleteLater)
             self.thread1.finished.connect(self.thread1.deleteLater)
-            self.check_stability.progress.connect(self.reportProgress)
-            self.check_stability.flag.connect(self.checkFinished)
+            self.worker_on_thread.progress.connect(self.reportProgress)
+            self.worker_on_thread.flag.connect(self.checkFinished)
                     
             self.thread1.start() 
 
@@ -261,7 +254,7 @@ class SecondWindow(Window):
                 lambda: self.pushButton.setEnabled(True)
             )
 
-            self.takeMeasurement()
+            # self.takeMeasurement()
 
             
     def reportProgress(self, n):
@@ -278,35 +271,47 @@ class SecondWindow(Window):
             self.progressBar.setValue(bar_value)
             self.progressBar.setFormat("%.02f %%" % bar_value)
 
+
+            # self.worker_on_thread.moveToThread(self.thread1)
+
+            self.thread1.started.connect(self.worker_on_thread.measurementsAverage)
+            self.worker_on_thread.finished.connect(self.thread1.quit)
+            self.worker_on_thread.finished.connect(self.worker_on_thread.deleteLater)
+            self.thread1.finished.connect(self.thread1.deleteLater)
+            self.worker_on_thread.measurements_ready.connect(self.takeMeasurement)
+            # self.worker_on_thread.flag.connect(self.measurementsAverageFinished)
+
             self.actual_step += 1
         else:
             self.alerts.setText("No se ha podido hallar estabilidad")
             self.alerts.setStyleSheet(f''' color: red ''')
 
+    # def measurementsAverageFinished(self):
+
     
-    def takeMeasurement(self): #! Run it in a thread ---------------------------------------------------------------
-        measurements_counter = 0
-        start_time = time.time()
+    def takeMeasurement(self, measurements): #! Run it in a thread ---------------------------------------------------------------
+        # measurements_counter = 0
+        # start_time = time.time()
 
-        pressure_in = 0
-        pressure_out = 0
-        electrical_power = 1
-        temperature = 0
+        pressure_in = measurements[0]
+        pressure_out = measurements[1]
+        electrical_power = measurements[2]
+        temperature = measurements[3]
         
         
 
-        while time.time() - start_time < 2:
+        """ while time.time() - start_time < 2:
             pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
             pressure_out += 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
             # electrical_power += self.measurePower()
             # temperature += self.measureTemperature()
 
-            measurements_counter += 1
+            measurements_counter += 1 """
 
-        pressure_in /= measurements_counter
+        """ pressure_in /= measurements_counter
         pressure_out /= measurements_counter
         electrical_power /= measurements_counter
-        temperature /= measurements_counter
+        temperature /= measurements_counter """
         
         water_density = float(water_density_df[water_density_df['Temperatura °C'] == temperature]['Densidad kg / m3'].iloc[0])
         g = 9.79
@@ -341,7 +346,7 @@ class SecondWindow(Window):
         characterized_pump["pump_total"].append(pump_total)
         characterized_pump["pump_power"].append(electrical_power)
 
-        hydraulic_power = pressure_out * self.flow / 60 #! 
+        hydraulic_power = pressure_out * self.flow / 60 #! Correct equation
         characterized_pump["pump_efficiency"].append(hydraulic_power / electrical_power * 100)
         
 
@@ -375,17 +380,25 @@ class SecondWindow(Window):
     def measureTemperature(self):
         pass
 
-    def measuringFlow(self):
+    def countingFlowPulses(self, channel):
+
+        self.flow_measurement_time = 10 # sec
         if not self.flow_measurement_started:
             self.flow_measurement_started = True
             self.start_time_flow_measurement = time.time()
             self.flowmeter_pulses += 1
+
+            self.timer_flow_measurement.timeout.connect(self.definingFlow)
+            self.timer.start(self.flow_measurement_time * 1000)
         else:
             self.flowmeter_pulses += 1
+    
+    def definingFlow(self):
         
-        if time.time() - self.start_time_flow_measurement >= 1:
-            self.flow = self.flowmeter_pulses / self.pulses_per_liter * 60
+        if time.time() - self.start_time_flow_measurement >= self.flow_measurement_time:
+            self.flow = self.flowmeter_pulses * 6
             self.flow_measurement_started = False
+            self.flowmeter_pulses = 0
             
 
 
@@ -460,14 +473,14 @@ class GpioThread(QThread):
 
 
 
-class checkStabilityOnThread(QObject):
+class workerOnThread(QObject):
 
     finished = pyqtSignal()
-    progress = pyqtSignal(float)
-    flag = pyqtSignal(bool)
+    
 
     def check(self):
-
+        progress = pyqtSignal(float)
+        flag = pyqtSignal(bool)
         gain = 1
         if characterized_pump["pump_type"] == "roto": #!Change pin numbers            
             sensor_1_pin = 0
@@ -514,9 +527,32 @@ class checkStabilityOnThread(QObject):
                 self.finished.emit()
                 break
     
-    
+    measurements_ready = pyqtSignal(list)
 
-        pass
+    def measurementsAverage(self):
+        
+        measurements_counter = 0
+        start_time = time.time()
+
+        pressure_in = 0
+        pressure_out = 0
+        electrical_power = 1
+        temperature = 0
+
+        while time.time() - start_time < 2:
+            pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
+            pressure_out += 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
+            # electrical_power += self.measurePower()
+            # temperature += self.measureTemperature()
+
+            measurements_counter += 1
+        
+        pressure_in /= measurements_counter
+        pressure_out /= measurements_counter
+        electrical_power /= measurements_counter
+        temperature /= measurements_counter
+        self.measurements_ready.emit([pressure_in, pressure_out, electrical_power, temperature])
+        self.finished.emit()
 
 if __name__ == '__main__':
 
@@ -536,12 +572,17 @@ if __name__ == '__main__':
     # information_window.pushButton.clicked.connect(getInformation)
     widget.addWidget(information_window)
 
-    # !GPIO.setup(flowmeter_pin, GPIO.IN)
-    
-    # !GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=self.measuringFlow())
-
     measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
     widget.addWidget(measurements_window)
+
+    if characterized_pump["pump_type"] == "roto":
+        flowmeter_pin = 4 #! Definir bien los pines
+    elif characterized_pump["pump_type"] == "triplex":
+        flowmeter_pin = 17
+    
+    # GPIO.setup(flowmeter_pin, GPIO.IN)
+    
+    # GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=measurements_window.countingFlowPulses)
 
     report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
