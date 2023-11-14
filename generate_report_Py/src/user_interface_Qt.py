@@ -155,7 +155,11 @@ class SecondWindow(Window):
         
         self.timer.start(1000)
 
+        self.start_timer = pyqtSignal()
+        self.start_timer = pyqtSignal()
+
         self.contador_random = 0
+        
 
 
     def takeSensorsData(self):
@@ -238,15 +242,15 @@ class SecondWindow(Window):
 
             self.thread1 = QThread()
 
-            self.worker_on_thread = workerOnThread()
-            self.worker_on_thread.moveToThread(self.thread1)
+            self.check_stability_on_thread = checkStabilityOnThread()
+            self.check_stability_on_thread.moveToThread(self.thread1)
 
-            self.thread1.started.connect(self.worker_on_thread.check)
-            self.worker_on_thread.finished.connect(self.thread1.quit)
-            self.worker_on_thread.finished.connect(self.worker_on_thread.deleteLater)
+            self.thread1.started.connect(self.check_stability_on_thread.check)
+            self.check_stability_on_thread.finished.connect(self.thread1.quit)
+            self.check_stability_on_thread.finished.connect(self.check_stability_on_thread.deleteLater)
             self.thread1.finished.connect(self.thread1.deleteLater)
-            self.worker_on_thread.progress.connect(self.reportProgress)
-            self.worker_on_thread.flag.connect(self.checkFinished)
+            self.check_stability_on_thread.progress.connect(self.reportProgress)
+            self.check_stability_on_thread.flag.connect(self.checkFinished)
                     
             self.thread1.start() 
 
@@ -272,19 +276,19 @@ class SecondWindow(Window):
             self.progressBar.setFormat("%.02f %%" % bar_value)
 
 
-            # self.worker_on_thread.moveToThread(self.thread1)
+            # self.measure_on_thread.moveToThread(self.thread1)
 
             # self.thread2 = QThread()
 
-            self.worker_on_thread = workerOnThread()
-            self.worker_on_thread.moveToThread(self.thread1)
+            self.measure_on_thread = measureOnThread()
+            self.measure_on_thread.moveToThread(self.thread1)
 
-            self.thread1.started.connect(self.worker_on_thread.measurementsAverage)
-            self.worker_on_thread.finished.connect(self.thread1.quit)
-            self.worker_on_thread.finished.connect(self.worker_on_thread.deleteLater)
+            self.thread1.started.connect(self.measure_on_thread.measurementsAverage)
+            self.measure_on_thread.finished.connect(self.thread1.quit)
+            self.measure_on_thread.finished.connect(self.measure_on_thread.deleteLater)
             self.thread1.finished.connect(self.thread1.deleteLater)
-            self.worker_on_thread.measurements_ready.connect(self.takeMeasurement)
-            # self.worker_on_thread.flag.connect(self.measurementsAverageFinished)
+            self.measure_on_thread.measurements_ready.connect(self.takeMeasurement)
+            # self.measure_on_thread.flag.connect(self.measurementsAverageFinished)
 
             self.actual_step += 1
         else:
@@ -387,17 +391,21 @@ class SecondWindow(Window):
 
     def countingFlowPulses(self, channel):
 
+        
         self.flow_measurement_time = 10 # sec
+
         if not self.flow_measurement_started:
             self.flow_measurement_started = True
             self.start_time_flow_measurement = time.time()
             self.flowmeter_pulses += 1
-
-            self.timer_flow_measurement.timeout.connect(self.definingFlow)
-            self.timer.start(self.flow_measurement_time * 1000)
+            self.start_timer.emit()
         else:
             self.flowmeter_pulses += 1
     
+    def countFlowTime(self):
+        self.timer_flow_measurement.timeout.connect(self.definingFlow)
+        self.timer.start(self.flow_measurement_time * 1000)
+
     def definingFlow(self):
         
         if time.time() - self.start_time_flow_measurement >= self.flow_measurement_time:
@@ -478,7 +486,7 @@ class GpioThread(QThread):
 
 
 
-class workerOnThread(QObject):
+class checkStabilityOnThread(QObject):
 
     finished = pyqtSignal()
     
@@ -533,6 +541,10 @@ class workerOnThread(QObject):
                 self.finished.emit()
                 break
     
+    
+
+class measureOnThread(QObject):
+    finished = pyqtSignal()
     measurements_ready = pyqtSignal(list)
 
     def measurementsAverage(self):
@@ -585,6 +597,8 @@ if __name__ == '__main__':
         flowmeter_pin = 4 #! Definir bien los pines
     elif characterized_pump["pump_type"] == "triplex":
         flowmeter_pin = 17
+
+    measurements_window.start_timer.connect(measurements_window.countFlowTime)
     
     # GPIO.setup(flowmeter_pin, GPIO.IN)
     
