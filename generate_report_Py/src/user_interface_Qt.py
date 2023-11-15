@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt, QTimer, QThread, QObject, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, QThread, QObject, pyqtSignal, QEventLoop
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap, QImage
 
@@ -154,12 +154,12 @@ class SecondWindow(Window):
         self.timer.timeout.connect(self.takeSensorsData)
         
         self.timer.start(1000)
+        self.timer_flow_measurement.timeout.connect(self.definingFlow)
+        self.timer_flow_measurement.start(500)
 
-        self.start_timer = pyqtSignal()
-        self.start_timer = pyqtSignal()
+        self.flow_measurement_time = 10 # sec
 
-        self.contador_random = 0
-        
+        self.contador_random = 0 #! Esto debe ser eliminado al final
 
 
     def takeSensorsData(self):
@@ -172,8 +172,8 @@ class SecondWindow(Window):
         self.lcdNumber_t.display(self.contador_random)
         
     def defineButtonState(self):
-        # Disable pushButton while a requirement is not achieved
-        if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2:
+        # Hold pushButton disabled while a requirement is not achieved
+        if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2 and self.actual_step != 1:
             if self.flow >= self.different_apertures[self.actual_step // 2]:
                 self.pushButton.setEnabled(True)
 
@@ -206,6 +206,8 @@ class SecondWindow(Window):
             self.alerts.setText("Midiendo caudal máximo")
             self.alerts.setStyleSheet(f''' color: green ''')
             # Whe the valve is completely open, take tha measured flow as the maximum flow
+            self.pushButton.setEnabled(False)
+            QTimer.singleShot(self.flow_measurement_time * 1000, self.enableButton)
             self.max_flow = self.flow
 
             # Define the apertures for each measurement point
@@ -254,13 +256,15 @@ class SecondWindow(Window):
                     
             self.thread1.start() 
 
-            self.thread1.finished.connect(
-                lambda: self.pushButton.setEnabled(True)
-            )
+            # self.thread1.finished.connect(
+            #     lambda: self.pushButton.setEnabled(True)
+            # )
 
             # self.takeMeasurement()
 
-            
+    def enableButton(self):
+        self.pushButton.setEnabled(True)
+
     def reportProgress(self, n):
         self.alerts.setText(f"Time: {n}")
 
@@ -343,19 +347,19 @@ class SecondWindow(Window):
         flow_velocity = self.flow / tube_area / 60000 # m/s
         losts_1 = 0 #! Waiting for the calculations
         losts_2 = 0
-        velocity_head_1 = z1 + pressure_in  / (water_density * g) + (flow_velocity)**2 / (2*g) + losts_1
-        velocity_head_2 = z2 + pressure_out / (water_density * g) + (flow_velocity)**2 / (2*g) + losts_2
+        velocity_head_1 = z1 + pressure_in * (100000) / (water_density * g) + (flow_velocity)**2 / (2*g) + losts_1
+        velocity_head_2 = z2 + pressure_out * (100000)/ (water_density * g) + (flow_velocity)**2 / (2*g) + losts_2
 
         pump_total = velocity_head_2 - velocity_head_1
 
         characterized_pump["flow"].append(self.flow)
-        characterized_pump["pressure"].append(pressure_out)
+        characterized_pump["pressure"].append(pressure_out * (14.5038))
         characterized_pump["velocity"].append(velocity_head_2)
         characterized_pump["elevation"].append(z2 - z1)
         characterized_pump["pump_total"].append(pump_total)
         characterized_pump["pump_power"].append(electrical_power)
 
-        hydraulic_power = pressure_out * self.flow / 60 #! Correct equation
+        hydraulic_power = water_density * g *  pressure_out * (100000) * self.flow * (1 / 60000) 
         characterized_pump["pump_efficiency"].append(hydraulic_power / electrical_power * 100)
         
 
@@ -391,30 +395,28 @@ class SecondWindow(Window):
 
     def countingFlowPulses(self, channel):
 
-        
-        self.flow_measurement_time = 10 # sec
-
         if not self.flow_measurement_started:
             self.flow_measurement_started = True
             self.start_time_flow_measurement = time.time()
             self.flowmeter_pulses += 1
-            self.start_timer.emit()
+            print(self.flowmeter_pulses)
+            #self.start_timer.emit()
         else:
+            print(self.flowmeter_pulses)
             self.flowmeter_pulses += 1
-    
-    def countFlowTime(self):
-        self.timer_flow_measurement.timeout.connect(self.definingFlow)
-        self.timer.start(self.flow_measurement_time * 1000)
 
     def definingFlow(self):
         
-        if time.time() - self.start_time_flow_measurement >= self.flow_measurement_time:
-            self.flow = self.flowmeter_pulses * 6
+        if time.time() - self.start_time_flow_measurement >= self.flow_measurement_time and self.flow_measurement_started:
+            self.flow = self.flowmeter_pulses / self.flow_measurement_time * 60
             self.flow_measurement_started = False
             self.flowmeter_pulses = 0
-            
+            print(self.flow) 
 
-
+    def wait(self, milliseconds):
+        loop = QEventLoop()
+        QTimer.singleShot(milliseconds, loop.quit)
+        loop.exec_()
             
 class ThirdWindow(Window):
     def __init__(self, path, screen_width):
@@ -597,12 +599,13 @@ if __name__ == '__main__':
         flowmeter_pin = 4 #! Definir bien los pines
     elif characterized_pump["pump_type"] == "triplex":
         flowmeter_pin = 17
-
-    measurements_window.start_timer.connect(measurements_window.countFlowTime)
+    else:
+        flowmeter_pin = 4
+    #measurements_window.start_timer.connect(measurements_window.countFlowTime)
     
-    # GPIO.setup(flowmeter_pin, GPIO.IN)
+    #! GPIO.setup(flowmeter_pin, GPIO.IN)
     
-    # GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=measurements_window.countingFlowPulses)
+    #! GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=measurements_window.countingFlowPulses)
 
     report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
