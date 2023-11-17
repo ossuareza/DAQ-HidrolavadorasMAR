@@ -13,8 +13,8 @@ void loop() {
   if (Serial.available() > 0) {
     String data = Serial.readStringUntil('\n');
     if (data == "R") {                   // Rotodinámicas
-      v_pressure_1 = 1; //analogRead(A0);
-      v_pressure_2 = 2; //analogRead(A1);
+      v_pressure_1 = analogRead(A0);
+      v_pressure_2 = analogRead(A1);
     }
     else if (data == "T"){               //Triplex
       v_pressure_1 = analogRead(A2);
