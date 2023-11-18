@@ -1,5 +1,4 @@
 import sys
-import os
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt, QTimer, QThread, QObject, pyqtSignal, QEventLoop
 from PyQt5.uic import loadUi
@@ -313,7 +312,10 @@ class SecondWindow(Window):
 
         
     def storeMeasurement(self, measurements): #! Run it in a thread ---------------------------------------------------------------
-       
+        # measurements_counter = 0
+        # start_time = time.time()
+
+        print("Holis")
         pressure_in = measurements[0] # Measurementes come from class measureOnThread method measurementsAverage
         pressure_out = measurements[1]
         electrical_power = measurements[2]
@@ -335,41 +337,34 @@ class SecondWindow(Window):
         temperature /= measurements_counter """
         
         water_density = float(water_density_df[water_density_df['Temperatura °C'] == temperature]['Densidad kg / m3'].iloc[0])
-        g = 9.798
+        g = 9.79
 
         if characterized_pump["pump_type"] == "roto":            
-            z1 = 0.851 #! Update those values
+            z1 = 0.851
             z2 = 1.637
-            suction_tube_area = ((51.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
-            discharge_tube_area = ((38.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
+            tube_area = ((51.8 * 10 ** (-3)) / 4) ** 2 * np.pi # m^2
 
         elif characterized_pump["pump_type"] == "triplex": 
             z1 = 0.435
             z2 = 0.603
-            suction_tube_area = ((24.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
-            discharge_tube_area = ((10.75 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
+            tube_area = ((24.8 * 10 ** (-3)) / 4) ** 2 * np.pi # m^2
         else:
             z1 = 0
             z2 = 0
-            suction_tube_area = 1
-            discharge_tube_area = 1
+            tube_area = 1
 
         
-        flow_velocity_suction   = self.flow / suction_tube_area   / 60000 # m/s
-        flow_velocity_discharge = self.flow / discharge_tube_area / 60000 # m/s
-        losses_1 = 0 #! Waiting for the calculations
-        losses_2 = 0
-        velocity_head_1 = (flow_velocity_suction  )**2 / (2*g) # m
-        velocity_head_2 = (flow_velocity_discharge)**2 / (2*g)
+        flow_velocity = self.flow / tube_area / 60000 # m/s
+        losts_1 = 0 #! Waiting for the calculations
+        losts_2 = 0
+        velocity_head_1 = z1 + pressure_in * (100000) / (water_density * g) + (flow_velocity)**2 / (2*g) + losts_1
+        velocity_head_2 = z2 + pressure_out * (100000)/ (water_density * g) + (flow_velocity)**2 / (2*g) + losts_2
 
-        total_suction_head   = z1 + pressure_in * (100000) / (water_density * g) + velocity_head_1 - losses_1
-        total_discharge_head = z2 + pressure_out * (100000)/ (water_density * g) + velocity_head_2 + losses_2
-
-        pump_total = total_discharge_head - total_suction_head
+        pump_total = velocity_head_2 - velocity_head_1
 
         characterized_pump["flow"].append(self.flow)
         characterized_pump["pressure"].append(pressure_out * (14.5038))
-        characterized_pump["velocity"].append(velocity_head_2 - velocity_head_2)
+        characterized_pump["velocity"].append(velocity_head_2)
         characterized_pump["elevation"].append(z2 - z1)
         characterized_pump["pump_total"].append(pump_total)
         characterized_pump["pump_power"].append(electrical_power)
@@ -410,19 +405,32 @@ class SecondWindow(Window):
         pass
 
     def measurePressure(self):
-        if characterized_pump["pump_type"] == "roto":            
+        factor1=0
+        factor2=0
+        if characterized_pump["pump_type"] == "roto":
+            factor1=13/1023 
+            factor2=25/1023              
             ser.write(b"R\n")
-            convert_to_bar_1 = (12 - (-1)) / (5) - 1
-            convert_to_bar_2 = ( 25 ) / (5)
 
         if characterized_pump["pump_type"] == "triplex": 
+            factor1=13/1023 
+            factor2=400/1023 
             ser.write(b"T\n")
-            convert_to_bar_1 = (12 - (-1)) / (5) - 1
-            convert_to_bar_2 = ( 400 ) / (5)
         
         # time.sleep(1)
-        pressure_in = ser.readline().decode('utf-8').rstrip()  * convert_to_bar_1 
-        pressure_out = ser.readline().decode('utf-8').rstrip() * convert_to_bar_2 
+
+        pressure_in = ser.readline().decode('utf-8').rstrip()
+
+        if pressure_in is "":
+            pressure_in = -1
+        pressure_in = float(pressure_in) * factor1 - 1
+        
+        pressure_out = ser.readline().decode('utf-8').rstrip()
+        
+        if pressure_out is "":
+            pressure_out = -1
+        
+        pressure_out = float(pressure_out) * factor2
 
         return pressure_in, pressure_out
 
@@ -445,7 +453,10 @@ class SecondWindow(Window):
             self.flowmeter_pulses = 0
             # print(self.flow) 
 
-
+    def wait(self, milliseconds):
+        loop = QEventLoop()
+        QTimer.singleShot(milliseconds, loop.quit)
+        loop.exec_()
 
 
 
@@ -478,9 +489,9 @@ class checkStabilityOnThread(QObject):
             
             checking_time = time.time() - start_checking_process_time
             self.progress.emit(round(checking_time, 2))
-            pressure_1, pressure_2 = self.measurePressure()
-            # pressure_1 = 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767)
-            # pressure_2 = 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767)
+
+            pressure_1 = 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767)
+            pressure_2 = 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767)
 
             average_m_1 += pressure_1
             average_m_2 += pressure_2
@@ -522,20 +533,16 @@ class measureOnThread(QObject):
         electrical_power = 1
         temperature = 0
 
-        while time.time() - start_time < 2 and measurements_counter > 0:
+        while time.time() - start_time < 2:
             
             if characterized_pump["pump_type"] == "roto":            
                 ser.write(b"R\n")
-                convert_to_bar_1 = (12 - (-1)) / (5) - 1
-                convert_to_bar_2 = ( 25 ) / (5)
 
             if characterized_pump["pump_type"] == "triplex": 
                 ser.write(b"T\n")
-                convert_to_bar_1 = (12 - (-1)) / (5) - 1
-                convert_to_bar_2 = ( 400 ) / (5)
             try:            
-                pressure_in  = float(ser.readline().decode('utf-8').rstrip()) * convert_to_bar_1
-                pressure_out = float(ser.readline().decode('utf-8').rstrip()) * convert_to_bar_2
+                pressure_in = float(ser.readline().decode('utf-8').rstrip())
+                pressure_out = float(ser.readline().decode('utf-8').rstrip())
                 # print(pressure_in, pressure_out)
                 # pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
                 # pressure_out += 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
@@ -625,13 +632,7 @@ class ThirdWindow(Window):
 
 
 
-def closeApp(widget):
-    widget.close()
-    os.system("shutdown now -h") #shut down the Pi -h is or -r will reset
 
-def turnOnLed(led_pin):
-    
-    GPIO.output(led_pin,GPIO.HIGH)
 
 
 if __name__ == '__main__':
@@ -666,23 +667,18 @@ if __name__ == '__main__':
     #measurements_window.start_timer.connect(measurements_window.countFlowTime)
     
     GPIO.setup(flowmeter_pin, GPIO.IN)
-    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses)
+    
+    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=measurements_window.countingFlowPulses)
 
-    red_button_pin = 7
-    GPIO.setup(red_button_pin, GPIO.IN)
-    GPIO.add_event_detect(red_button_pin, GPIO.RISING, callback = lambda x: closeApp(widget))
-
-    green_led_pin = 0 #! Define pins
-    GPIO.setup(green_led_pin,GPIO.OUT)
-
-    red_led_pin = 0
-
-    GPIO.setup(red_led_pin,GPIO.OUT)
     report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
 
     widget.show()
 
+    # if stopButton.is_pressed: #Check to see if button is pressed
+    #         time.sleep(1) # wait for the hold time we want. 
+    #         if stopButton.is_pressed: #check if the user let go of the button
+    #             os.system("shutdown now -h") #shut down the Pi -h is or -r will reset
 
 
     sys.exit(app.exec_())
