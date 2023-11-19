@@ -100,14 +100,22 @@ class FirstWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
         self.pushButton.clicked.connect(self.goToNextTask)
+        self.alerts.setText("Seleccione un tipo de bomba y diligencie las casillas")
+        self.alerts.setStyleSheet(f''' color: green ''')
     
     def goToNextTask(self):
-        widget.setCurrentIndex(1)
+        
 
         if self.roto.isChecked():
             characterized_pump["pump_type"] = "roto"
-        if self.triplex.isChecked():
+            widget.setCurrentIndex(1)
+        elif self.triplex.isChecked():
             characterized_pump["pump_type"] = "triplex" 
+            widget.setCurrentIndex(1)
+        else:
+            self.alerts.setText("Debe seleccionar un tipo de bomba")
+            self.alerts.setStyleSheet(f''' color: red ''')
+
 
         characterized_pump["service_order"] = self.lE_1_service_order.text()
         characterized_pump["delegate"] = self.lE_2_delegate.text()
@@ -149,7 +157,7 @@ class SecondWindow(Window):
         self.progressBar.setMaximum(100)
         self.progressBar.setValue(0)
 
-        self.different_apertures = []
+        self.different_apertures = [0, 0, 0, 0, 0]
 
         self.timer = QTimer(self)
         self.timer_flow_measurement = QTimer(self)
@@ -170,7 +178,7 @@ class SecondWindow(Window):
         
     def defineButtonState(self):
         # Hold pushButton disabled while a requirement is not achieved
-        if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2 and self.actual_step != 1:
+        if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2:# and self.actual_step != 1:
             if self.flow >= self.different_apertures[self.actual_step // 2]:
                 self.pushButton.setEnabled(True)
 
@@ -200,7 +208,7 @@ class SecondWindow(Window):
 
         elif self.actual_step == 0:
                 
-            self.alerts.setText("Espere: Midiendo caudal máximo")
+            self.alerts.setText("¡¡¡Espere!!! Midiendo caudal máximo")
             self.alerts.setStyleSheet(f''' color: blue ''')
             # Whe the valve is completely open, take tha measured flow as the maximum flow
             self.pushButton.setEnabled(False)
@@ -262,16 +270,18 @@ class SecondWindow(Window):
         self.max_flow = self.flow
         self.different_apertures = self.max_flow * np.linspace(1, 0.7, characterized_pump["total_measurements"])
 
-        self.alerts.setText("Continue: Caudal máximo medido")
+        self.alerts.setText("Caudal máximo medido. Continue con el proceso")
         self.alerts.setStyleSheet(f''' color: green ''')
 
     def reportProgress(self, n): #! Test function, it should be deleted
-        self.alerts.setText(f"Time: {n}")
+        # self.alerts.setText(f"Time: {n}")
+        self.alerts.setText("¡¡¡Espere!!! Midiendo estabilidad")
+        self.alerts.setStyleSheet(f''' color: blue ''')
 
     def checkFinished(self, check_flag):
         if check_flag:
-            self.alerts.setText("Se ha hallado la estabilidad")
-            self.alerts.setStyleSheet(f''' color: blue ''')
+            self.alerts.setText("Se ha hallado la estabilidad. Continue con el proceso")
+            self.alerts.setStyleSheet(f''' color: green ''')
             self.pushButton.setEnabled(True)
             
             bar_value = int((self.actual_step // 2 + 1) / characterized_pump["total_measurements"] * 100)
@@ -358,7 +368,7 @@ class SecondWindow(Window):
 
         
         
-        water_propierties = water_propierties_df[water_propierties_df['Temperatura °C'] == temperature]
+        water_propierties = water_propierties_df[water_propierties_df['Temp. [°C]'] == temperature]
 
         water_density = float(water_propierties_df['Densidad [kg/m3]'].iloc[0])
 
@@ -424,7 +434,7 @@ class SecondWindow(Window):
         velocity_head_2 = (flow_velocity_discharge)**2 / (2*g) # m
 
         # Suction loses ****************************
-        f_s_r = self.haalandCalculations(e_s, D_s, water_viscosity, velocity_head_1)
+        f_s = self.haalandCalculations(e_s, D_s, water_viscosity, velocity_head_1)
         suction_loses = (f_s * (L_s / D_s) + sum_k_s) * velocity_head_1 ** 2 / (2*g) # m 
 
 
@@ -451,8 +461,8 @@ class SecondWindow(Window):
 
     def haalandCalculations(self, e, D, water_viscosity, V):
         Re = (D * V) / (water_viscosity)
-        f_raiz = (-1.8 * np.log((( e / D) / 3.7)/ ** 1.11 + (6.9 / Re)))** (-1)
-        f = f_raiz ** 2
+        f_raiz = (-1.8 * np.log((( e / D) / 3.7) ** 1.11 + (6.9 / (Re + 0.000001)))) ** (-1) #! Delete the epsilon
+        return f_raiz ** 2
 
     def measurePower(self):
 
