@@ -17,7 +17,7 @@ void loop() {
 
   if (Serial.available() > 0) {
     String data = Serial.readStringUntil('\n');
-    if (data == "R") {                   // Rotodinámicas
+    if (data == "R") {                   // Rotodin�micas
       reading_roto = true;
       reading_triplex = false;
     }
@@ -25,6 +25,8 @@ void loop() {
       reading_triplex = true;
       reading_roto = false;
     }
+    v_pressure_1 += analogRead(A4);
+    v_pressure_2 += analogRead(A2);
 
     v_pressure_1 = v_pressure_1 / measurements_counter;
     v_pressure_2 = v_pressure_2 / measurements_counter;
@@ -38,8 +40,8 @@ void loop() {
   }
 
   if (reading_roto) {
-    v_pressure_1 += analogRead(A0);
-    v_pressure_2 += analogRead(A1);
+    v_pressure_1 += analogRead(A4);
+    v_pressure_2 += analogRead(A2);
     measurements_counter += 1;
   }
   else if (reading_triplex) {

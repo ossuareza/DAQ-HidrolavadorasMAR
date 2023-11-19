@@ -323,7 +323,11 @@ class SecondWindow(Window):
         electrical_power = measurements[2]
         temperature = measurements[3]
         
-        
+
+        z1 = 0
+        z2 = 0
+        suction_tube_area = 1
+        discharge_tube_area = 1
 
         """ while time.time() - start_time < 2:
             pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
@@ -337,36 +341,53 @@ class SecondWindow(Window):
         pressure_out /= measurements_counter
         electrical_power /= measurements_counter
         temperature /= measurements_counter """
+
+        # Loses **********************
+
+        e_mang_trans=0.0020 * 10 ** (-3) # m
+        e_mang_neg=0.001 * 10 ** (-3) # m
+        visc_c=0 # m^2/s
+        g=9.798 # m/s^2
+
+        
         
         water_density = float(water_density_df[water_density_df['Temperatura °C'] == temperature]['Densidad kg / m3'].iloc[0])
-        g = 9.79
+        g = 9.798
 
         if characterized_pump["pump_type"] == "roto":            
-            z1 = 0.851
-            z2 = 1.637
-            tube_area = ((51.8 * 10 ** (-3)) / 4) ** 2 * np.pi # m^2
+            z1 = 0.97
+            z2 = 1.625
+            suction_tube_area = ((51.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
+            discharge_tube_area = ((38.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
+
+            # 
 
         elif characterized_pump["pump_type"] == "triplex": 
-            z1 = 0.435
-            z2 = 0.603
-            tube_area = ((24.8 * 10 ** (-3)) / 4) ** 2 * np.pi # m^2
-        else:
-            z1 = 0
-            z2 = 0
-            tube_area = 1
+            z1 = 0.48
+            z2 = 0.61
+            suction_tube_area = ((24.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
+            discharge_tube_area = ((10.75 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
 
         
-        flow_velocity = self.flow / tube_area / 60000 # m/s
-        losts_1 = 0 #! Waiting for the calculations
-        losts_2 = 0
-        velocity_head_1 = z1 + pressure_in * (100000) / (water_density * g) + (flow_velocity)**2 / (2*g) + losts_1
-        velocity_head_2 = z2 + pressure_out * (100000)/ (water_density * g) + (flow_velocity)**2 / (2*g) + losts_2
+        flow_velocity_suction   = self.flow / suction_tube_area   / 60000 # m/s
+        flow_velocity_discharge = self.flow / discharge_tube_area / 60000 # m/s
 
-        pump_total = velocity_head_2 - velocity_head_1
+
+        loses_1 = 0 #! Waiting for the calculations
+        loses_2 = 0
+
+        velocity_head_1 = (flow_velocity_suction  )**2 / (2*g) # m
+        velocity_head_2 = (flow_velocity_discharge)**2 / (2*g) # m
+
+        total_suction_head   = z1 + pressure_in * (100000) / (water_density * g) + velocity_head_1 - losses_1
+        total_discharge_head = z2 + pressure_out * (100000)/ (water_density * g) + velocity_head_2 + losses_2
+        
+
+        pump_total = total_discharge_head - total_suction_head
 
         characterized_pump["flow"].append(self.flow)
         characterized_pump["pressure"].append(pressure_out * (14.5038))
-        characterized_pump["velocity"].append(velocity_head_2)
+        characterized_pump["velocity"].append(velocity_head_2 - velocity_head_1)
         characterized_pump["elevation"].append(z2 - z1)
         characterized_pump["pump_total"].append(pump_total)
         characterized_pump["pump_power"].append(electrical_power)
@@ -739,6 +760,16 @@ def measureAveragePressure():
     return pressure_in, pressure_out
 
 
+def closeApp(widget):
+    widget.close()
+    os.system("shutdown now -h") #shut down the Pi -h is or -r will reset
+
+def turnOnLed(led_pin):
+
+    GPIO.output(led_pin,GPIO.HIGH)
+
+
+
 if __name__ == '__main__':
 
     GPIO.setmode(GPIO.BCM)
@@ -762,6 +793,7 @@ if __name__ == '__main__':
     measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
     widget.addWidget(measurements_window)
 
+
     if characterized_pump["pump_type"] == "roto":
         flowmeter_pin = 4 #! Definir bien los pines
     elif characterized_pump["pump_type"] == "triplex":
@@ -773,6 +805,17 @@ if __name__ == '__main__':
     GPIO.setup(flowmeter_pin, GPIO.IN)
     
     GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 500)
+
+
+    red_button_pin = 7 # Button to close the app
+    GPIO.setup(red_button_pin, GPIO.IN)
+    GPIO.add_event_detect(red_button_pin, GPIO.RISING, callback = lambda x: closeApp(widget))
+
+    green_led_pin = 0 #! Define pins
+    GPIO.setup(green_led_pin,GPIO.OUT)
+
+    red_led_pin = 0
+    GPIO.setup(red_led_pin,GPIO.OUT)
 
     report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
