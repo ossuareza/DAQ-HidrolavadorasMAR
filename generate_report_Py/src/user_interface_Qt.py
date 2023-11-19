@@ -409,7 +409,7 @@ class SecondWindow(Window):
 
             # Discharge
 
-            L_d_h = 3; %[m]
+            L_d_h = 3 # m
             D_d_h = 7 * 10 ** (-3) # m
             e_d_h = e_mang_neg
             
