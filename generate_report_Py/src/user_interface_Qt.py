@@ -329,6 +329,13 @@ class SecondWindow(Window):
         suction_tube_area = 1
         discharge_tube_area = 1
 
+        flow_velocity_suction = 0
+        flow_velocity_discharge = 0
+
+        suction_loses = 0
+        discharge_loses = 0
+        
+
         """ while time.time() - start_time < 2:
             pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
             pressure_out += 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
@@ -344,10 +351,10 @@ class SecondWindow(Window):
 
         # Loses **********************
 
-        e_mang_trans=0.0020 * 10 ** (-3) # m
-        e_mang_neg=0.001 * 10 ** (-3) # m
-        visc_c=0 # m^2/s
-        g=9.798 # m/s^2
+        e_mang_trans = 0.0020 * 10 ** (-3) # m
+        e_mang_neg = 0.001 * 10 ** (-3) # m
+        visc_c = 0 # m^2/s
+        g = 9.798 # m/s^2
 
         
         
@@ -360,7 +367,22 @@ class SecondWindow(Window):
             suction_tube_area = ((51.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
             discharge_tube_area = ((38.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
 
-            # 
+            flow_velocity_suction   = self.flow / suction_tube_area   / 60000 # m/s
+            flow_velocity_discharge = self.flow / discharge_tube_area / 60000 # m/s
+
+            # Loses for rotodynamic pumps
+
+            # Suction
+            L_s = 0.5 # m
+            D_s = 51.8 * 10 ** (-3) # m
+            sum_k_s = 11.65 + 0.05
+            e_s = e_mang_trans
+            
+            # Discharge loses 
+            D_d_r = 38.8 / 25.4 # in
+            sum_k_d_r = 11.65 + 1.5 + 1.4 * (D_d_r ** (-0.53))
+            
+            discharge_loses = (sum_k_d_r) * flow_velocity_discharge ** 2 / (2*g) # m
 
         elif characterized_pump["pump_type"] == "triplex": 
             z1 = 0.48
@@ -368,19 +390,43 @@ class SecondWindow(Window):
             suction_tube_area = ((24.8 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
             discharge_tube_area = ((10.75 * 10 ** (-3)) / 2) ** 2 * np.pi # m^2
 
+            flow_velocity_suction   = self.flow / suction_tube_area   / 60000 # m/s
+            flow_velocity_discharge = self.flow / discharge_tube_area / 60000 # m/s
+
+            # Loses for triplex pumps
+
+            # Suction
+            L_s = 2.3 # m
+            D_s = 24.8 * 10 ** (-3) # m
+            sum_k_s = 0.3
+            e_s = e_mang_trans
+
+            # Discharge
+
+            L_d_h = 3; %[m]
+            D_d_h = 7 * 10/ ** (-3) # m
+            e_d_h = e_mang_neg
+            
+            f_d_h = self.haalandCalculations(e_d_h,D_d_h,visc_c,flow_velocity_discharge)
+            discharge_loses = (f_d_h * (L_d_h / D_d_h)) * flow_velocity_discharge ** 2 / (2*g) # m
+            
+
         
-        flow_velocity_suction   = self.flow / suction_tube_area   / 60000 # m/s
-        flow_velocity_discharge = self.flow / discharge_tube_area / 60000 # m/s
-
-
-        loses_1 = 0 #! Waiting for the calculations
-        loses_2 = 0
+        
 
         velocity_head_1 = (flow_velocity_suction  )**2 / (2*g) # m
         velocity_head_2 = (flow_velocity_discharge)**2 / (2*g) # m
 
-        total_suction_head   = z1 + pressure_in * (100000) / (water_density * g) + velocity_head_1 - losses_1
-        total_discharge_head = z2 + pressure_out * (100000)/ (water_density * g) + velocity_head_2 + losses_2
+        # Suction loses ****************************
+        f_s_r = self.haalandCalculations(e_s, D_s, visc_c, velocity_head_1)
+        suction_loses = (f_s * (L_s / D_s) + sum_k_s) * velocity_head_1 ** 2 / (2*g) # m 
+
+
+        
+    
+
+        total_suction_head   = z1 + pressure_in * (100000) / (water_density * g) + velocity_head_1 - suction_loses
+        total_discharge_head = z2 + pressure_out * (100000)/ (water_density * g) + velocity_head_2 + discharge_loses
         
 
         pump_total = total_discharge_head - total_suction_head
@@ -397,6 +443,10 @@ class SecondWindow(Window):
         
         print(characterized_pump)
 
+    def haalandCalculations(self, e, D, visc_c, V):
+        Re = (D * V) / (visc_c)
+        f_raiz = (-1.8 * np.log((( e / D) / 3.7)/ ** 1.11 + (6.9 / Re)))** (-1)
+        f = f_raiz ** 2
 
     def measurePower(self):
 
