@@ -50,7 +50,9 @@ characterized_pump = {
 }
 
 
-water_density_df = pd.read_excel("data/density/Densidad_agua.xlsx") # Load table for water densities at different temperatures
+# water_density_df = pd.read_excel("data/density/Densidad_agua.xlsx") # Load table for water densities at different temperatures
+
+water_propierties_df = pd.read_excel("data/water_propierties/Propiedades_agua.xlsx") # Load table for water densities at different temperatures
 
 
 
@@ -117,7 +119,7 @@ class SecondWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
 
-        self.alerts.setText("Preparado para empezar con la rutina de medición")
+        self.alerts.setText("Abra la válvula totalmente")
         self.alerts.setStyleSheet(f''' color: green ''')
         
 
@@ -198,8 +200,8 @@ class SecondWindow(Window):
 
         elif self.actual_step == 0:
                 
-            self.alerts.setText("Midiendo caudal máximo")
-            self.alerts.setStyleSheet(f''' color: green ''')
+            self.alerts.setText("Espere: Midiendo caudal máximo")
+            self.alerts.setStyleSheet(f''' color: blue ''')
             # Whe the valve is completely open, take tha measured flow as the maximum flow
             self.pushButton.setEnabled(False)
             # QTimer.singleShot(self.flow_measurement_time * 1000, self.enableButtonAfterFMeasurement)
@@ -216,7 +218,7 @@ class SecondWindow(Window):
             target_flow = round(self.different_apertures[self.actual_step // 2] , 2)
 
             # Show alerts to guide the search process of the target flow
-            self.alerts.setText(f"Cierre la válvula hasta flujo de {target_flow } L/min")
+            self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } L/min")
             self.lcdNumber_fo.display(target_flow)
             self.alerts.setStyleSheet(f''' color: green ''')
             self.pushButton.setEnabled(False)
@@ -260,13 +262,16 @@ class SecondWindow(Window):
         self.max_flow = self.flow
         self.different_apertures = self.max_flow * np.linspace(1, 0.7, characterized_pump["total_measurements"])
 
+        self.alerts.setText("Continue: Caudal máximo medido")
+        self.alerts.setStyleSheet(f''' color: green ''')
+
     def reportProgress(self, n): #! Test function, it should be deleted
         self.alerts.setText(f"Time: {n}")
 
     def checkFinished(self, check_flag):
         if check_flag:
             self.alerts.setText("Se ha hallado la estabilidad")
-            self.alerts.setStyleSheet(f''' color: green ''')
+            self.alerts.setStyleSheet(f''' color: blue ''')
             self.pushButton.setEnabled(True)
             
             bar_value = int((self.actual_step // 2 + 1) / characterized_pump["total_measurements"] * 100)
@@ -275,8 +280,6 @@ class SecondWindow(Window):
             self.progressBar.setFormat("%.02f %%" % bar_value)
 
 
-            # self.measure_on_thread.moveToThread(self.thread1)
-            print("Hallito")
             self.thread2 = QThread()
 
             self.measure_on_thread = measureOnThread()
@@ -314,10 +317,7 @@ class SecondWindow(Window):
 
         
     def storeMeasurement(self, measurements): #! Run it in a thread ---------------------------------------------------------------
-        # measurements_counter = 0
-        # start_time = time.time()
-
-        print("Holis")
+        
         pressure_in = measurements[0] # Measurementes come from class measureOnThread method measurementsAverage
         pressure_out = measurements[1]
         electrical_power = measurements[2]
@@ -353,12 +353,18 @@ class SecondWindow(Window):
 
         e_mang_trans = 0.0020 * 10 ** (-3) # m
         e_mang_neg = 0.001 * 10 ** (-3) # m
-        visc_c = 0 # m^2/s
+        water_viscosity = 0 # m^2/s
         g = 9.798 # m/s^2
 
         
         
-        water_density = float(water_density_df[water_density_df['Temperatura °C'] == temperature]['Densidad kg / m3'].iloc[0])
+        water_propierties = water_propierties_df[water_propierties_df['Temperatura °C'] == temperature]
+
+        water_density = float(water_propierties_df['Densidad [kg/m3]'].iloc[0])
+
+        water_viscosity = float(water_propierties_df['Viscocidad cinemativa [mm²/s]'].iloc[0])
+
+        
         g = 9.798
 
         if characterized_pump["pump_type"] == "roto":            
@@ -404,10 +410,10 @@ class SecondWindow(Window):
             # Discharge
 
             L_d_h = 3; %[m]
-            D_d_h = 7 * 10/ ** (-3) # m
+            D_d_h = 7 * 10 ** (-3) # m
             e_d_h = e_mang_neg
             
-            f_d_h = self.haalandCalculations(e_d_h,D_d_h,visc_c,flow_velocity_discharge)
+            f_d_h = self.haalandCalculations(e_d_h, D_d_h, water_viscosity, flow_velocity_discharge)
             discharge_loses = (f_d_h * (L_d_h / D_d_h)) * flow_velocity_discharge ** 2 / (2*g) # m
             
 
@@ -418,7 +424,7 @@ class SecondWindow(Window):
         velocity_head_2 = (flow_velocity_discharge)**2 / (2*g) # m
 
         # Suction loses ****************************
-        f_s_r = self.haalandCalculations(e_s, D_s, visc_c, velocity_head_1)
+        f_s_r = self.haalandCalculations(e_s, D_s, water_viscosity, velocity_head_1)
         suction_loses = (f_s * (L_s / D_s) + sum_k_s) * velocity_head_1 ** 2 / (2*g) # m 
 
 
@@ -443,8 +449,8 @@ class SecondWindow(Window):
         
         print(characterized_pump)
 
-    def haalandCalculations(self, e, D, visc_c, V):
-        Re = (D * V) / (visc_c)
+    def haalandCalculations(self, e, D, water_viscosity, V):
+        Re = (D * V) / (water_viscosity)
         f_raiz = (-1.8 * np.log((( e / D) / 3.7)/ ** 1.11 + (6.9 / Re)))** (-1)
         f = f_raiz ** 2
 
@@ -557,9 +563,10 @@ class SecondWindow(Window):
         self.flow = ((self.flowmeter_pulses - 1)/ (time.time() - self.start_time_flow_measurement) ) * 60
         self.flow_measurement_started = False
         self.flowmeter_pulses = 0
+
         print(f"Tiempo de inicio: {self.flow_measurement_started}")
         print(f"Tiempo final: {time.time()}")
-        # print(f"Pulse number: {self.flowmeter_pulses}")
+        print(f"Pulse number: {self.flowmeter_pulses}")
         print(f"Diferencia de tiempo: {time.time() - self.start_time_flow_measurement}")
         print(f"Flujo final: {self.flow}")
 
