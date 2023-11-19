@@ -590,7 +590,68 @@ class SecondWindow(Window):
         QTimer.singleShot(milliseconds, loop.quit)
         loop.exec_()
 
+def measureAveragePressure():
+    factor1=0
+    factor2=0
+    if characterized_pump["pump_type"] == "roto":
+        factor1=13/1023 
+        factor2=25/1023              
+        ser.write(b"R\n")
 
+    if characterized_pump["pump_type"] == "triplex": 
+        factor1=13/1023 
+        factor2=400/1023 
+        ser.write(b"T\n")
+    
+    # time.sleep(1)
+    try:
+
+        arduino_data = ser.readline().decode('utf-8').rstrip()
+
+        
+        if arduino_data == "Arduino ready": 
+            print(arduino_data)
+            arduino_data = ser.readline().decode('utf-8').rstrip()
+        if arduino_data == "":
+            pressure_in = -1
+            arduino_data = ser.readline().decode('utf-8').rstrip()
+        else:
+            try:
+                pressure_in = float(arduino_data) * factor1 - 1
+                print("pressure_in:", pressure_in)
+            except ValueError:
+                print("Invalid data received:", arduino_data)
+                pressure_in = 0
+
+    except serial.SerialException as e:
+        print("Serial Exception:", e)
+        pressure_in = 0
+        
+    
+    try:
+        arduino_data2 = ser.readline().decode('utf-8').rstrip()
+        
+        
+        if arduino_data2 == "Arduino ready": 
+            print(arduino_data2)
+            arduino_data2 = ser.readline().decode('utf-8').rstrip()
+        if arduino_data2 == "":
+            pressure_out = -1
+            arduino_data2 = ser.readline().decode('utf-8').rstrip()
+        else:
+            try:
+                pressure_out = float(arduino_data2) * factor2
+                print("pressure_out:", pressure_out)
+            except ValueError:
+                print("Invalid data received:", arduino_data)
+                pressure_out = 0
+    
+    except serial.SerialException as e:
+        print("Serial Exception:", e)
+        pressure_out = 0
+        
+
+    return pressure_in, pressure_out
 
 
 class checkStabilityOnThread(QObject):
@@ -702,6 +763,7 @@ class ThirdWindow(Window):
         self.alerts.setText("Listo para generar el reporte")
         self.alerts.setStyleSheet(f''' color: green ''')
         self.count_button_pushed = 0
+
     
     def goToNextTask(self):
 
@@ -713,7 +775,7 @@ class ThirdWindow(Window):
 
         self.alerts.setText("Generando reporte")
 
-        # characterized_pump["flow"] = [1,2,3,4,5,6,7,8,9,10]
+        characterized_pump["flow"] = [1,2,3,4,5]
         # characterized_pump["pressure"] =  [55, 54.5, 54, 53, 52.5, 51.7, 50, 48.5, 46, 44]
         # characterized_pump["velocity"] =  [1,2,3,4,5,6,7,8,9,10]
         # characterized_pump["elevation"] =  [1,2,3,4,5,6,7,8,9,10]
@@ -730,10 +792,20 @@ class ThirdWindow(Window):
         self.progressBar.setValue(20)
 
         # Generate the graphs of power, pressure, efficiency vs flow
+
+        
+        print(f'Size of flow array: {len(characterized_pump["flow"])}')
+        print(f'Size of pump_power array: {len(characterized_pump["pump_power"])}')
         plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (L/min)","Potencia (kW)")
         self.progressBar.setValue(30)
+
+        print(f'Size of flow array: {len(characterized_pump["flow"])}')
+        print(f'Size of pressure array: {len(characterized_pump["pressure"])}')
         plotter(characterized_pump["flow"], characterized_pump["pressure"], "FlowVsHead.png","Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)")
         self.progressBar.setValue(40)
+
+        print(f'Size of flow array: {len(characterized_pump["flow"])}')
+        print(f'Size of pump_efficiency array: {len(characterized_pump["pump_efficiency"])}')
         plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"], "FlowVsEfficiency.png","Flujo vs Eficiencia","Flujo (L/min)","Eficiencia (%)")
         self.progressBar.setValue(50)
 
@@ -746,6 +818,8 @@ class ThirdWindow(Window):
         self.progressBar.setValue(100)
 
         self.alerts.setText("Generación de reporte finalizado")
+
+        self.pushButton.setText("Caracterizar otra bomba")
 
 
         
@@ -763,68 +837,7 @@ class ThirdWindow(Window):
 
 
 
-def measureAveragePressure():
-    factor1=0
-    factor2=0
-    if characterized_pump["pump_type"] == "roto":
-        factor1=13/1023 
-        factor2=25/1023              
-        ser.write(b"R\n")
 
-    if characterized_pump["pump_type"] == "triplex": 
-        factor1=13/1023 
-        factor2=400/1023 
-        ser.write(b"T\n")
-    
-    # time.sleep(1)
-    try:
-
-        arduino_data = ser.readline().decode('utf-8').rstrip()
-
-        
-        if arduino_data == "Arduino ready": 
-            print(arduino_data)
-            arduino_data = ser.readline().decode('utf-8').rstrip()
-        if arduino_data == "":
-            pressure_in = -1
-            arduino_data = ser.readline().decode('utf-8').rstrip()
-        else:
-            try:
-                pressure_in = float(arduino_data) * factor1 - 1
-                print("pressure_in:", pressure_in)
-            except ValueError:
-                print("Invalid data received:", arduino_data)
-                pressure_in = 0
-
-    except serial.SerialException as e:
-        print("Serial Exception:", e)
-        pressure_in = 0
-        
-    
-    try:
-        arduino_data2 = ser.readline().decode('utf-8').rstrip()
-        
-        
-        if arduino_data2 == "Arduino ready": 
-            print(arduino_data2)
-            arduino_data2 = ser.readline().decode('utf-8').rstrip()
-        if arduino_data2 == "":
-            pressure_out = -1
-            arduino_data2 = ser.readline().decode('utf-8').rstrip()
-        else:
-            try:
-                pressure_out = float(arduino_data2) * factor2
-                print("pressure_out:", pressure_out)
-            except ValueError:
-                print("Invalid data received:", arduino_data)
-                pressure_out = 0
-    
-    except serial.SerialException as e:
-        print("Serial Exception:", e)
-        pressure_out = 0
-        
-
-    return pressure_in, pressure_out
 
 
 def closeApp(widget):
@@ -889,10 +902,6 @@ if __name__ == '__main__':
 
     widget.show()
 
-    # if stopButton.is_pressed: #Check to see if button is pressed
-    #         time.sleep(1) # wait for the hold time we want. 
-    #         if stopButton.is_pressed: #check if the user let go of the button
-    #             os.system("shutdown now -h") #shut down the Pi -h is or -r will reset
 
 
     sys.exit(app.exec_())
