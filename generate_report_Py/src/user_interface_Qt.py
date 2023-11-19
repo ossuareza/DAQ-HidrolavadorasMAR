@@ -156,10 +156,12 @@ class SecondWindow(Window):
         self.timer.timeout.connect(self.showSensorsData)
         self.timer.start(1000)
 
-        self.timer_flow_measurement.timeout.connect(self.definingFlow)
-        self.timer_flow_measurement.start(500)
+        # self.timer_flow_measurement.timeout.connect(self.definingFlow)
+        # self.timer_flow_measurement.start(500)
 
-        self.flow_measurement_time = 10 # sec
+        # self.flow_measurement_time = 10 # sec
+        self.max_flow_was_defined = False
+
 
         self.contador_random = 0 #! Esto debe ser eliminado al final
 
@@ -200,12 +202,8 @@ class SecondWindow(Window):
             self.alerts.setStyleSheet(f''' color: green ''')
             # Whe the valve is completely open, take tha measured flow as the maximum flow
             self.pushButton.setEnabled(False)
-            QTimer.singleShot(self.flow_measurement_time * 1000, self.enableButton)
-            self.max_flow = self.flow
-
-            # Define the apertures for each measurement point
-            self.different_apertures = self.max_flow * np.linspace(1, 0.4, characterized_pump["total_measurements"])
-
+            # QTimer.singleShot(self.flow_measurement_time * 1000, self.enableButtonAfterFMeasurement)
+            
             self.actual_step += 1
 
         elif self.actual_step % 2 == 0:
@@ -215,7 +213,7 @@ class SecondWindow(Window):
             self.label_fo_units.show()
             
             # Define target flow
-            target_flow = self.different_apertures[self.actual_step // 2]
+            target_flow = round(self.different_apertures[self.actual_step // 2] , 2)
 
             # Show alerts to guide the search process of the target flow
             self.alerts.setText(f"Cierre la válvula hasta flujo de {target_flow } L/min")
@@ -255,8 +253,12 @@ class SecondWindow(Window):
 
             # self.storeMeasurement()
 
-    def enableButton(self):
+    def enableButtonAfterFMeasurement(self):
         self.pushButton.setEnabled(True)
+
+        # Define the apertures for each measurement point
+        self.max_flow = self.flow
+        self.different_apertures = self.max_flow * np.linspace(1, 0.7, characterized_pump["total_measurements"])
 
     def reportProgress(self, n): #! Test function, it should be deleted
         self.alerts.setText(f"Time: {n}")
@@ -301,8 +303,8 @@ class SecondWindow(Window):
         pressure_in, pressure_out = self.measurePressure()
         # Display sensors data on screen
         self.lcdNumber_f.display(self.flow) #! Modify with the pump dictionary
-        self.lcdNumber_pin.display(pressure_in)
-        self.lcdNumber_pout.display(pressure_out)
+        self.lcdNumber_pin.display(pressure_in * 14.503773773)
+        self.lcdNumber_pout.display(pressure_out * 14.503773773)
         self.lcdNumber_pw.display(self.contador_random)
         self.lcdNumber_t.display(self.contador_random)
 
@@ -418,19 +420,49 @@ class SecondWindow(Window):
             ser.write(b"T\n")
         
         # time.sleep(1)
+        try:
+            arduino_data = ser.readline().decode('utf-8').rstrip()
 
-        pressure_in = ser.readline().decode('utf-8').rstrip()
+            
+            if arduino_data == "Arduino ready": 
+                print(arduino_data)
+                arduino_data = ser.readline().decode('utf-8').rstrip()
+            if arduino_data == "":
+                pressure_in = -1
+                arduino_data = ser.readline().decode('utf-8').rstrip()
+            else:
+                try:
+                    pressure_in = float(arduino_data) * factor1 - 1
+                    print("pressure_in:", pressure_in)
+                except ValueError:
+                    print("Invalid data received:", arduino_data)
+                    pressure_in = 0
+        except serial.SerialException as e:
+            print("Serial Exception:", e)
+            pressure_in = 0
+        
 
-        if pressure_in is "":
-            pressure_in = -1
-        pressure_in = float(pressure_in) * factor1 - 1
-        
-        pressure_out = ser.readline().decode('utf-8').rstrip()
-        
-        if pressure_out is "":
-            pressure_out = -1
-        
-        pressure_out = float(pressure_out) * factor2
+            
+        try:
+            arduino_data2 = ser.readline().decode('utf-8').rstrip()
+            
+            
+            if arduino_data2 == "Arduino ready": 
+                print(arduino_data2)
+                arduino_data2 = ser.readline().decode('utf-8').rstrip()
+            if arduino_data2 == "":
+                pressure_out = -1
+                arduino_data2 = ser.readline().decode('utf-8').rstrip()
+            else:
+                try:
+                    pressure_out = float(arduino_data2) * factor2
+                    print("pressure_out:", pressure_out)
+                except ValueError:
+                    print("Invalid data received:", arduino_data2)
+                    pressure_out = 0
+        except serial.SerialException as e:
+            print("Serial Exception:", e)
+            pressure_out = 0
 
         return pressure_in, pressure_out
 
@@ -440,17 +472,29 @@ class SecondWindow(Window):
             self.flow_measurement_started = True
             self.start_time_flow_measurement = time.time()
             self.flowmeter_pulses += 1
-            # print(self.flowmeter_pulses)
+            # print(f"Pulse number: {self.flowmeter_pulses}")
         else:
-            # print(self.flowmeter_pulses)
+            # print(f"Pulse number: {self.flowmeter_pulses}")
             self.flowmeter_pulses += 1
+            
+            if self.flowmeter_pulses == 10:
+                self.definingFlow()
 
     def definingFlow(self):
         
-        if time.time() - self.start_time_flow_measurement >= self.flow_measurement_time and self.flow_measurement_started:
-            self.flow = self.flowmeter_pulses / self.flow_measurement_time * 60
-            self.flow_measurement_started = False
-            self.flowmeter_pulses = 0
+        # if time.time() - self.start_time_flow_measurement >= self.flow_measurement_time and self.flow_measurement_started:
+        self.flow = ((self.flowmeter_pulses - 1)/ (time.time() - self.start_time_flow_measurement) ) * 60
+        self.flow_measurement_started = False
+        self.flowmeter_pulses = 0
+        print(f"Tiempo de inicio: {self.flow_measurement_started}")
+        print(f"Tiempo final: {time.time()}")
+        # print(f"Pulse number: {self.flowmeter_pulses}")
+        print(f"Diferencia de tiempo: {time.time() - self.start_time_flow_measurement}")
+        print(f"Flujo final: {self.flow}")
+
+        if not self.max_flow_was_defined and self.actual_step == 1:
+            self.enableButtonAfterFMeasurement()
+            self.max_flow_was_defined = True
             # print(self.flow) 
 
     def wait(self, milliseconds):
@@ -524,7 +568,7 @@ class measureOnThread(QObject):
 
     def measurementsAverage(self):
         
-        print("Hallo")
+        
         measurements_counter = 0
         start_time = time.time()
 
@@ -535,22 +579,21 @@ class measureOnThread(QObject):
 
         while time.time() - start_time < 2:
             
-            if characterized_pump["pump_type"] == "roto":            
-                ser.write(b"R\n")
+            # if characterized_pump["pump_type"] == "roto":            
+            #     ser.write(b"R\n")
 
-            if characterized_pump["pump_type"] == "triplex": 
-                ser.write(b"T\n")
-            try:            
-                pressure_in = float(ser.readline().decode('utf-8').rstrip())
-                pressure_out = float(ser.readline().decode('utf-8').rstrip())
+            # if characterized_pump["pump_type"] == "triplex": 
+            #     ser.write(b"T\n")
+            # try:            
+            pressure_in,pressure_out = measureAveragePressure()
                 # print(pressure_in, pressure_out)
                 # pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
                 # pressure_out += 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
                 # electrical_power += self.measurePower()
                 # temperature += self.measureTemperature()
-            except:
-                print("fail")
-                break
+            # except:
+            #     print("fail")
+            #     break
             measurements_counter += 1
         
         pressure_in /= measurements_counter
@@ -587,7 +630,7 @@ class ThirdWindow(Window):
         # characterized_pump["velocity"] =  [1,2,3,4,5,6,7,8,9,10]
         # characterized_pump["elevation"] =  [1,2,3,4,5,6,7,8,9,10]
         # characterized_pump["pump_total"] =  [1,2,3,4,5,6,7,8,9,10]
-        characterized_pump["pump_power"] =  [6,12,14,20,22,24,35,45,44,53]
+        characterized_pump["pump_power"] =  [6,12,14,20,22]
         # characterized_pump["pump_efficiency"] =  [0,10,20,20,25,30,40,70,60,50]
         
         # Finding most efficient point
@@ -632,7 +675,68 @@ class ThirdWindow(Window):
 
 
 
+def measureAveragePressure():
+    factor1=0
+    factor2=0
+    if characterized_pump["pump_type"] == "roto":
+        factor1=13/1023 
+        factor2=25/1023              
+        ser.write(b"R\n")
 
+    if characterized_pump["pump_type"] == "triplex": 
+        factor1=13/1023 
+        factor2=400/1023 
+        ser.write(b"T\n")
+    
+    # time.sleep(1)
+    try:
+
+        arduino_data = ser.readline().decode('utf-8').rstrip()
+
+        
+        if arduino_data == "Arduino ready": 
+            print(arduino_data)
+            arduino_data = ser.readline().decode('utf-8').rstrip()
+        if arduino_data == "":
+            pressure_in = -1
+            arduino_data = ser.readline().decode('utf-8').rstrip()
+        else:
+            try:
+                pressure_in = float(arduino_data) * factor1 - 1
+                print("pressure_in:", pressure_in)
+            except ValueError:
+                print("Invalid data received:", arduino_data)
+                pressure_in = 0
+
+    except serial.SerialException as e:
+        print("Serial Exception:", e)
+        pressure_in = 0
+        
+    
+    try:
+        arduino_data2 = ser.readline().decode('utf-8').rstrip()
+        
+        
+        if arduino_data2 == "Arduino ready": 
+            print(arduino_data2)
+            arduino_data2 = ser.readline().decode('utf-8').rstrip()
+        if arduino_data2 == "":
+            pressure_out = -1
+            arduino_data2 = ser.readline().decode('utf-8').rstrip()
+        else:
+            try:
+                pressure_out = float(arduino_data2) * factor2
+                print("pressure_out:", pressure_out)
+            except ValueError:
+                print("Invalid data received:", arduino_data)
+                pressure_out = 0
+    
+    except serial.SerialException as e:
+        print("Serial Exception:", e)
+        pressure_out = 0
+        
+
+    return pressure_in, pressure_out
 
 
 if __name__ == '__main__':
@@ -668,7 +772,7 @@ if __name__ == '__main__':
     
     GPIO.setup(flowmeter_pin, GPIO.IN)
     
-    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback=measurements_window.countingFlowPulses)
+    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 500)
 
     report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
