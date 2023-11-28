@@ -52,11 +52,11 @@ characterized_pump["final_efficiency"] =  characterized_pump["pump_efficiency"][
 
 def generate_report(characterized_pump):
     # Generate the graphs of power, pressure, efficiency vs flow
-    # plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (L/min)","Potencia (kW)")
+    # plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (L/min)","Potencia (W)")
     # plotter(characterized_pump["flow"], characterized_pump["pressure"], "FlowVsHead.png","Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)")
     # plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"], "FlowVsEfficiency.png","Flujo vs Eficiencia","Flujo (L/min)","Eficiencia (%)")
 
-    flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (kW)", "FlowVsPower.png")
+    flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png")
     flow_vs_pump_power.plotter()
     # self.progressBar.setValue(30)
 
@@ -81,7 +81,7 @@ manometer_pressure = np.array([0, 26, 33.5, 39, 40])#/14.503773773
 manometer_flow =     np.array([78.56, 64.2, 50.7, 36.5, 35.5])
 
 
-manometer_plotter = Plotter(manometer_flow[1:], manometer_pressure[1:], "Flujo vs Potencia","Flujo (L/min)","Potencia (kW)", "FlowVsPower.png")
+manometer_plotter = Plotter(manometer_flow[1:], manometer_pressure[1:], "Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png")
 
 coefficients_manometer = manometer_plotter.optimization()
 curve = np.poly1d(coefficients_manometer)
@@ -92,7 +92,7 @@ manometer_y_curve = curve(manometer_x_curve)
 sensor_flow =        np.array([80.2, 68.9, 57.9, 46.9, 35.5])
 sensor_pressure =    np.array([3.12, 23.2, 28.4, 32.4, 35.8])#/14.503773773
 
-sensor_plotter = Plotter(sensor_flow[1:], sensor_pressure[1:], "Flujo vs Potencia","Flujo (L/min)","Potencia (kW)", "FlowVsPower.png")
+sensor_plotter = Plotter(sensor_flow[1:], sensor_pressure[1:], "Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png")
 
 coefficients_sensor = sensor_plotter.optimization()
 curve = np.poly1d(coefficients_sensor)
