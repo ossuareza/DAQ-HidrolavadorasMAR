@@ -249,7 +249,7 @@ class SecondWindow(Window):
     def defineButtonState(self):
         # Hold pushButton disabled while a requirement is not achieved
         if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2:# and self.actual_step != 1:
-            if self.flow >= self.different_apertures[self.actual_step // 2]:
+            if self.flow >= self.different_apertures[self.actual_step // 2]:# and (self.actual_step % 2 == 0 or self.actual_step == 1):
                 self.pushButton.setEnabled(True)
 
         # self.contador_random += 1
@@ -286,7 +286,7 @@ class SecondWindow(Window):
                 
             self.alerts.setText("¡¡¡Espere!!! Midiendo caudal máximo")
             self.alerts.setStyleSheet(f''' color: blue ''')
-            # Whe the valve is completely open, take tha measured flow as the maximum flow
+            # When the valve is completely open, take tha measured flow as the maximum flow
             self.pushButton.setEnabled(False)
             # QTimer.singleShot(self.flow_measurement_time * 1000, self.enableButtonAfterFMeasurement)
             
@@ -384,6 +384,7 @@ class SecondWindow(Window):
         else:
             self.alerts.setText("No se ha podido hallar estabilidad")
             self.alerts.setStyleSheet(f''' color: red ''')
+            time.sleep(1)
 
     # def measurementsAverageFinished(self):
 
@@ -870,7 +871,7 @@ class checkStabilityOnThread(QObject):
                     self.finished.emit()
                     break
             
-            if time.time() - start_count_stabilization_time >= 1:
+            if time.time() - start_count_stabilization_time >= 10:
                 
                 self.flag.emit(True)
                 self.finished.emit()
@@ -910,7 +911,7 @@ class measureOnThread(QObject):
 
             #     break
             
-            time.sleep(1)
+            # time.sleep(1)
             
 
             

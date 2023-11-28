@@ -5,7 +5,7 @@
 
 import board
 import busio
-import adafruit_ads1x15.ads1115 as ADS
+import  adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 import time
  
@@ -29,9 +29,11 @@ while True:
     print("Analog Value 1: ", channel1.value, "Voltage 1: ", channel1.voltage)
     print("Analog Value 2: ", channel2.value, "Voltage 2: ", channel2.voltage)
     print("Analog Value 3: ", channel3.value, "Voltage 3: ", channel3.voltage)
+
+    print("=============================================")
     
     # Delay for 1 second
-    time.sleep(1)
+    time.sleep(2)
 
 
 # Second code *********************************************
