@@ -30,17 +30,15 @@ import pandas as pd
 from random import random
 
 characterized_pump = {
-    "motor_speed" : 3450, 
-    "power" : 750, 
-    "parking_slot" : 1,
-    
     "pump_type": "",
     "service_order" : "", 
     "date" : "", 
     "delegate" : "", 
     "model" : "",
 
-
+    "motor_speed" : 0, 
+    "power" : 0, 
+    "parking_slot" : 0,
     "test_number" : 0,
     
     "flow" : [], 
@@ -186,7 +184,7 @@ class FirstWindow(Window):
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(1).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(1)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.currentWidget().goToNextTask, bouncetime = 2000)
-            # currentWidget()
+            currentWidget()
         else:
             self.alerts.setText("Debe seleccionar un tipo de bomba")
             self.alerts.setStyleSheet(f''' color: red ''')

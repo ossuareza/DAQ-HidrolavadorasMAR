@@ -53,7 +53,7 @@ def generate_html(pump):
         <tr>
             <td colspan=2 height="50"><img src="../../data/imgs/logo.png" alt="Hidrolavadoras MAR Image" width="200" height="34"></td>
             <td class="td_top" align="center">Velocidad n (rpm)<br><br>{pump["motor_speed"]}</td>
-            <td class="td_top" align="center">Potencia P(kW)<br><br>{pump["power"]}</td>
+            <td class="td_top" align="center">Potencia P(W)<br><br>{pump["power"]}</td>
             <td class="td_top" colspan=2>Número del parqueadero:<br><br><br>{pump["parking_slot"]}</td>
             <td class="td_top" colspan=2>Número orden del servicio:<br><br><br>{pump["service_order"]}</td>
             </tr>
@@ -67,7 +67,7 @@ def generate_html(pump):
             <td rowspan=2 align="center">Medición No.</td>
             <td rowspan=2 align="center">Flujo Q(L/min)</td>
             <td colspan=4 align="center">Cabeza</td>
-            <td rowspan=2 align="center">Potencia de entrada P(kW)</td>
+            <td rowspan=2 align="center">Potencia de entrada P(W)</td>
             <td rowspan=2 align="center">Eficiencia de la bomba (%)</td>
         </tr>
         <tr>
