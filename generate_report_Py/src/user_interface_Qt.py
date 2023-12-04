@@ -56,8 +56,8 @@ characterized_pump = {
 
 
 # water_density_df = pd.read_excel("data/density/Densidad_agua.xlsx") # Load table for water densities at different temperatures
-
-water_propierties_df = pd.read_excel("data/water_propierties/Propiedades_agua.xlsx") # Load table for water densities at different temperatures
+water_properties_path = os.path.join("data", "water_properties", "Propiedades_agua.xlsx")
+water_properties_df = pd.read_excel(water_properties_path) # Load table for water densities at different temperatures
 
 
 
@@ -72,10 +72,13 @@ from adafruit_ads1x15.analog_in import AnalogIn
 i2c = busio.I2C(board.SCL, board.SDA)
 
 # Create an ADS1115 object
-ads = ADS.ADS1115(i2c)
+
+if not testing_interface:
+    ads = ADS.ADS1115(i2c)
 
 import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
+
 
 # Wattmeters ***************************************************
 wattmeter_1 = serial.Serial(
@@ -105,6 +108,7 @@ master2.set_timeout(2.0)
 master2.set_verbose(True)
 
 measuring_presure = False
+testing_interface = True
 
 pressure_in_global = 0
 pressure_out_global = 0
@@ -156,7 +160,8 @@ class Window(QtWidgets.QMainWindow):
                 if "alerts" in element.widget().objectName():
                     element.widget().setStyleSheet(f''' font-size: {int(title_font_size * 3/2)}px; color: red''')
                 if "logo" in element.widget().objectName():
-                    pixmap_image = QPixmap("data/imgs/logo.png")
+                    image_path = os.path.join("data", "imgs", "logo.png")
+                    pixmap_image = QPixmap(image_path)
                     element.widget().setPixmap(pixmap_image.scaledToWidth(self.screen_width // 6))
                     element.widget().setAlignment(Qt.AlignCenter)
             self.defineFontSizes(element)
@@ -389,8 +394,8 @@ class SecondWindow(Window):
     # def measurementsAverageFinished(self):
 
     def showSensorsData(self):
-        if not measuring_presure:
-            pressure_in, pressure_out = measureAveragePressure() # self.measurePressure()
+        if not measuring_presure and not testing_interface:
+            pressure_in, pressure_out = measurePressure() # self.measurePressure()
             self.lcdNumber_pin.display(pressure_in * 14.503773773)
             self.lcdNumber_pout.display(pressure_out * 14.503773773)
         # Display sensors data on screen
@@ -412,7 +417,7 @@ class SecondWindow(Window):
         
     def storeMeasurement(self, measurements): #! Run it in a thread ---------------------------------------------------------------
         
-        # pressure_in, pressure_out = measureAveragePressure()
+        # pressure_in, pressure_out = measurePressure()
         # electrical_power = self.measurePower()
         # temperature = 20 # self.measureTemperature()
 
@@ -432,20 +437,6 @@ class SecondWindow(Window):
 
         suction_loses = 0
         discharge_loses = 0
-        
-
-        """ while time.time() - start_time < 2:
-            pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
-            pressure_out += 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
-            # electrical_power += self.measurePower()
-            # temperature += self.measureTemperature()
-
-            measurements_counter += 1 """
-
-        """ pressure_in /= measurements_counter
-        pressure_out /= measurements_counter
-        electrical_power /= measurements_counter
-        temperature /= measurements_counter """
 
         # Loses **********************
 
@@ -456,11 +447,11 @@ class SecondWindow(Window):
 
         
         
-        water_propierties = water_propierties_df[water_propierties_df['Temp. [°C]'] == temperature]
+        water_properties = water_properties_df[water_properties_df['Temp. [°C]'] == temperature]
 
-        water_density = float(water_propierties_df['Densidad [kg/m3]'].iloc[0])
+        water_density = float(water_properties['Densidad [kg/m3]'].iloc[0])
 
-        water_viscosity = float(water_propierties_df['Viscocidad cinematica [m²/s]'].iloc[0])
+        water_viscosity = float(water_properties['Viscocidad cinematica [m²/s]'].iloc[0])
 
         
         g = 9.798
@@ -610,86 +601,6 @@ class SecondWindow(Window):
         
         return temperature
 
-    """ def measurePressure(self):
-        
-        factor_1 = 0 
-        factor_2 = 0
-        adc_read_1 = AnalogIn(ads, ADS.P1)
-        adc_read_2 = AnalogIn(ads, ADS.P2)
-
-        if characterized_pump["pump_type"] == "roto":
-            adc_read_1 = AnalogIn(ads, ADS.P1) 
-            adc_read_2 = AnalogIn(ads, ADS.P2)
-            factor_1 = 13 / 4
-            factor_2 =  25 / 4
-
-
-        if characterized_pump["pump_type"] == "triplex": 
-            adc_read_1 = AnalogIn(ads, ADS.P2)
-            adc_read_2 = AnalogIn(ads, ADS.P3)
-            factor_1 = 13 / 4
-            factor_2 =  400 / 4
-
-        pressure_in  = (adc_read_1.voltage - 0.6) * factor_1  - 1
-        pressure_out = (adc_read_2.voltage - 0.6) * factor_2
-        # factor_1=0
-        # factor_2=0
-        # if characterized_pump["pump_type"] == "roto":
-        #     factor_1=13/1023 
-        #     factor_2=25/1023              
-        #     ser.write(b"R\n")
-
-        # if characterized_pump["pump_type"] == "triplex": 
-        #     factor_1=13/1023 
-        #     factor_2=400/1023 
-        #     ser.write(b"T\n")
-        
-        # # time.sleep(1)
-        # try:
-        #     arduino_data = ser.readline().decode('utf-8').rstrip()
-
-            
-        #     if arduino_data == "Arduino ready": 
-        #         print(arduino_data)
-        #         arduino_data = ser.readline().decode('utf-8').rstrip()
-        #     if arduino_data == "":
-        #         pressure_in = -1
-        #         arduino_data = ser.readline().decode('utf-8').rstrip()
-        #     else:
-        #         try:
-        #             pressure_in = float(arduino_data) * factor_1 - 1
-        #             print("pressure_in:", pressure_in)
-        #         except ValueError:
-        #             print("Invalid data received:", arduino_data)
-        #             pressure_in = 0
-        # except serial.SerialException as e:
-        #     print("Serial Exception:", e)
-        #     pressure_in = 0
-        
-
-            
-        # try:
-        #     arduino_data2 = ser.readline().decode('utf-8').rstrip()
-            
-            
-        #     if arduino_data2 == "Arduino ready": 
-        #         print(arduino_data2)
-        #         arduino_data2 = ser.readline().decode('utf-8').rstrip()
-        #     if arduino_data2 == "":
-        #         pressure_out = -1
-        #         arduino_data2 = ser.readline().decode('utf-8').rstrip()
-        #     else:
-        #         try:
-        #             pressure_out = float(arduino_data2) * factor_2
-        #             print("pressure_out:", pressure_out)
-        #         except ValueError:
-        #             print("Invalid data received:", arduino_data2)
-        #             pressure_out = 0
-        # except serial.SerialException as e:
-        #     print("Serial Exception:", e)
-        #     pressure_out = 0
-
-        return pressure_in, pressure_out """
 
     def countingFlowPulses(self, channel):
 
@@ -728,7 +639,10 @@ class SecondWindow(Window):
         QTimer.singleShot(milliseconds, loop.quit)
         loop.exec_()
 
-def measureAveragePressure():
+
+# Measuring Functions ************************************************************************************************************
+
+def measurePressure():
 
     # measuring_presure = True
 
@@ -749,8 +663,6 @@ def measureAveragePressure():
 
 
     elif characterized_pump["pump_type"] == "triplex": 
-        # adc_read_1 = AnalogIn(ads, ADS.P2)
-        # adc_read_2 = AnalogIn(ads, ADS.P3)
         pin_1 = ADS.P2
         pin_2 = ADS.P3
         factor_1 = 13 / 4
@@ -771,7 +683,7 @@ def measureAveragePressure():
         pressure_out = (adc_read_2.voltage - 0.63 - error) * factor_2
         # print(factor_2)
     except:
-        pressure_in, pressure_out = measureAveragePressure()
+        pressure_in, pressure_out = measurePressure()
 
         
     # measuring_presure = False
@@ -801,7 +713,7 @@ def measureTemperature():
     else:
         cs_pin = 8
     
-    return self.read_max6675(cs_pin)
+    return read_max6675(cs_pin)
     
 
     
@@ -831,14 +743,7 @@ class checkStabilityOnThread(QObject):
 
     def check(self):
         
-        gain = 1
-        if characterized_pump["pump_type"] == "roto": #!Change pin numbers            
-            sensor_1_pin = 0
-            sensor_2_pin = 0
-
-        if characterized_pump["pump_type"] == "triplex": #!Change pin numbers
-            sensor_1_pin = 0
-            sensor_2_pin = 0
+        
 
         average_m_1 = 0
         average_m_2 = 0
@@ -846,13 +751,12 @@ class checkStabilityOnThread(QObject):
         start_count_stabilization_time = time.time()
         start_checking_process_time = time.time()
 
-        while True:
+        while True and not testing_interface:
             
             checking_time = time.time() - start_checking_process_time
             self.progress.emit(round(checking_time, 2))
 
-            pressure_1 = 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767)
-            pressure_2 = 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767)
+            pressure_1, pressure_2 = measurePressure()
 
             average_m_1 += pressure_1
             average_m_2 += pressure_2
@@ -894,9 +798,13 @@ class measureOnThread(QObject):
         electrical_power = 0
         temperature = 0
         measuring_presure = True
-        while time.time() - start_time < 5:
+        while time.time() - start_time < 5 :
 
-            p_in, p_out = measureAveragePressure()
+            if testing_interface:
+                measurements_counter += 1
+                break
+
+            p_in, p_out = measurePressure()
 
             pressure_in += p_in # pressure_in = pressure_in + p_in 
             pressure_out += p_out
