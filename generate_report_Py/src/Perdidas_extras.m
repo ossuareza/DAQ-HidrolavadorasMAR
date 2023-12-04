@@ -32,6 +32,7 @@ g=9.798; %[m/s^2] (Ya la tiene en el codigo)
     V_d_h=0; %[m/s] Velocidad descarga hidro (Ya la tiene en el codigo)
     f_d_h=Haaland(e_d_h,D_d_h,visc_c,V_d_h); %[-]
     hL_d_h=(f_d_h*(L_d_h/D_d_h))*V_d_h^2/(2*g); %[m] Esta es la cabeza de perdidas de la descarga de las hidro
+    
 function f=Haaland(e,D,visc_c,V) %Formula explicita para el f de Haaland
     Re=(D*V)/(visc_c);
     f_raiz=(-1.8*log10(((e/D)/3.7)^1.11+(6.9/Re)))^-1;

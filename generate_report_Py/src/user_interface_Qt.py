@@ -1,3 +1,4 @@
+import os
 import sys
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt, QTimer, QThread, QObject, pyqtSignal, QEventLoop
@@ -9,14 +10,18 @@ from six.moves.queue import Queue
 
 from generate_html import generate_html
 from generate_pdf import generate_pdf
-from plotter import plotter
+from plotter import Plotter
 
 import serial
+import spidev
+
+spi = spidev.SpiDev()
+spi.open(0, 0)  # Use CE0 (Chip Enable 0) for the SPI communication
+spi.max_speed_hz = 5000000  # You may need to adjust this based on your sensor's specifications
 # import modbus_tk.defines as cst
 # from modbus_tk import modbus_rtu
 
 import time
-# !import Adafruit_ADS1x15
 import RPi.GPIO as GPIO
 
 import numpy as np
@@ -56,6 +61,59 @@ water_propierties_df = pd.read_excel("data/water_propierties/Propiedades_agua.xl
 
 
 
+# ADC I2C communication ******************************************************************************
+
+import board
+import busio
+import adafruit_ads1x15.ads1115 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
+
+# Initialize the I2C interface
+i2c = busio.I2C(board.SCL, board.SDA)
+
+# Create an ADS1115 object
+ads = ADS.ADS1115(i2c)
+
+import modbus_tk.defines as cst
+from modbus_tk import modbus_rtu
+
+# Wattmeters ***************************************************
+wattmeter_1 = serial.Serial(
+                       port='/dev/ttyS0',
+                       baudrate=9600,
+                       bytesize=8,
+                       parity='N',
+                       stopbits=1,
+                       xonxoff=0
+                      )
+
+master = modbus_rtu.RtuMaster(wattmeter_1)
+master.set_timeout(2.0)
+master.set_verbose(True)
+
+wattmeter_2 = serial.Serial(
+                       port='/dev/ttyAMA5',
+                       baudrate=9600,
+                       bytesize=8,
+                       parity='N',
+                       stopbits=1,
+                       xonxoff=0
+                      )
+
+master2 = modbus_rtu.RtuMaster(wattmeter_2)
+master2.set_timeout(2.0)
+master2.set_verbose(True)
+
+measuring_presure = False
+
+pressure_in_global = 0
+pressure_out_global = 0
+
+flowmeter_pin = 0
+
+voltage_out = []
+voltage_in = []
+
 # !adc = Adafruit_ADS1x15.ADS1115()
 
 class Window(QtWidgets.QMainWindow):
@@ -65,6 +123,14 @@ class Window(QtWidgets.QMainWindow):
         self.screen_width = screen_width
 
         self.defineFontSizes(self.centralwidget)
+
+        # Green button pin definitions    ******************************************************************************
+        # Green button pin definitions    ******************************************************************************
+
+
+        
+        self.green_button_pin = 27
+        
         
     def defineFontSizes(self, main_object):
 
@@ -102,8 +168,10 @@ class FirstWindow(Window):
         self.pushButton.clicked.connect(self.goToNextTask)
         self.alerts.setText("Seleccione un tipo de bomba y diligencie las casillas")
         self.alerts.setStyleSheet(f''' color: green ''')
+
+        
     
-    def goToNextTask(self):
+    def goToNextTask(self,*channel):
         
 
         if self.roto.isChecked():
@@ -111,7 +179,12 @@ class FirstWindow(Window):
             widget.setCurrentIndex(1)
         elif self.triplex.isChecked():
             characterized_pump["pump_type"] = "triplex" 
+
+            # GPIO.remove_event_detect(self.green_button_pin)
+            # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(1).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(1)
+            # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.currentWidget().goToNextTask, bouncetime = 2000)
+            currentWidget()
         else:
             self.alerts.setText("Debe seleccionar un tipo de bomba")
             self.alerts.setStyleSheet(f''' color: red ''')
@@ -120,7 +193,7 @@ class FirstWindow(Window):
         characterized_pump["service_order"] = self.lE_1_service_order.text()
         characterized_pump["delegate"] = self.lE_2_delegate.text()
         characterized_pump["date"] = self.lE_3_date.text()
-        characterized_pump["pump_model"] = self.lE_4_pump_model.text()
+        characterized_pump["model"] = self.lE_4_pump_model.text()
         characterized_pump["total_measurements"] = int(self.measurements.text())
 
 class SecondWindow(Window):
@@ -172,23 +245,26 @@ class SecondWindow(Window):
         # self.flow_measurement_time = 10 # sec
         self.max_flow_was_defined = False
 
-
-        self.contador_random = 0 #! Esto debe ser eliminado al final
-
         
     def defineButtonState(self):
         # Hold pushButton disabled while a requirement is not achieved
         if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2:# and self.actual_step != 1:
-            if self.flow >= self.different_apertures[self.actual_step // 2]:
+            if self.flow >= self.different_apertures[self.actual_step // 2]:# and (self.actual_step % 2 == 0 or self.actual_step == 1):
                 self.pushButton.setEnabled(True)
 
-        self.contador_random += 1
+        # self.contador_random += 1
 
     def goToNextTask(self):
         print(f"actual_step: {self.actual_step // 2}")
 
+        # if self.flow < 40:
+        #     GPIO.remove_event_detect(flowmeter_pin)
+        #     GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = self.goToNextTask, bouncetime = 1500)
+
         # If all the measurements were taken, then go to next screen
         if self.actual_step // 2 == characterized_pump["total_measurements"]:
+            # GPIO.remove_event_detect(self.green_button_pin)
+            # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(2).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(2)
             return
         
@@ -210,7 +286,7 @@ class SecondWindow(Window):
                 
             self.alerts.setText("¡¡¡Espere!!! Midiendo caudal máximo")
             self.alerts.setStyleSheet(f''' color: blue ''')
-            # Whe the valve is completely open, take tha measured flow as the maximum flow
+            # When the valve is completely open, take tha measured flow as the maximum flow
             self.pushButton.setEnabled(False)
             # QTimer.singleShot(self.flow_measurement_time * 1000, self.enableButtonAfterFMeasurement)
             
@@ -268,7 +344,7 @@ class SecondWindow(Window):
 
         # Define the apertures for each measurement point
         self.max_flow = self.flow
-        self.different_apertures = self.max_flow * np.linspace(1, 0.7, characterized_pump["total_measurements"])
+        self.different_apertures = self.max_flow * np.linspace(1, 0.45, characterized_pump["total_measurements"])
 
         self.alerts.setText("Caudal máximo medido. Continue con el proceso")
         self.alerts.setStyleSheet(f''' color: green ''')
@@ -308,18 +384,26 @@ class SecondWindow(Window):
         else:
             self.alerts.setText("No se ha podido hallar estabilidad")
             self.alerts.setStyleSheet(f''' color: red ''')
+            time.sleep(1)
 
     # def measurementsAverageFinished(self):
 
     def showSensorsData(self):
-
-        pressure_in, pressure_out = self.measurePressure()
+        if not measuring_presure:
+            pressure_in, pressure_out = measureAveragePressure() # self.measurePressure()
+            self.lcdNumber_pin.display(pressure_in * 14.503773773)
+            self.lcdNumber_pout.display(pressure_out * 14.503773773)
         # Display sensors data on screen
         self.lcdNumber_f.display(self.flow) #! Modify with the pump dictionary
-        self.lcdNumber_pin.display(pressure_in * 14.503773773)
-        self.lcdNumber_pout.display(pressure_out * 14.503773773)
-        self.lcdNumber_pw.display(self.contador_random)
-        self.lcdNumber_t.display(self.contador_random)
+        
+
+        power, current = self.measurePower()
+        self.lcdNumber_pw.display(power)
+        self.lcdNumber_c.display(current)
+        self.lcdNumber_t.display(20) #self.measureTemperature())
+
+        # print("Botón rojo: ", str(GPIO.input(22)))
+        # print("Botón verde: ", str(GPIO.input(27)))
 
         # print(f"flow: {self.flow}") 
         # print(f"pressure_in: {pressure_in}")
@@ -328,6 +412,10 @@ class SecondWindow(Window):
         
     def storeMeasurement(self, measurements): #! Run it in a thread ---------------------------------------------------------------
         
+        # pressure_in, pressure_out = measureAveragePressure()
+        # electrical_power = self.measurePower()
+        # temperature = 20 # self.measureTemperature()
+
         pressure_in = measurements[0] # Measurementes come from class measureOnThread method measurementsAverage
         pressure_out = measurements[1]
         electrical_power = measurements[2]
@@ -372,7 +460,7 @@ class SecondWindow(Window):
 
         water_density = float(water_propierties_df['Densidad [kg/m3]'].iloc[0])
 
-        water_viscosity = float(water_propierties_df['Viscocidad cinemativa [mm²/s]'].iloc[0])
+        water_viscosity = float(water_propierties_df['Viscocidad cinematica [m²/s]'].iloc[0])
 
         
         g = 9.798
@@ -434,16 +522,25 @@ class SecondWindow(Window):
         velocity_head_2 = (flow_velocity_discharge)**2 / (2*g) # m
 
         # Suction loses ****************************
-        f_s = self.haalandCalculations(e_s, D_s, water_viscosity, velocity_head_1)
-        suction_loses = (f_s * (L_s / D_s) + sum_k_s) * velocity_head_1 ** 2 / (2*g) # m 
+        f_s = self.haalandCalculations(e_s, D_s, water_viscosity, flow_velocity_suction)
+        suction_loses = (f_s * (L_s / D_s) + sum_k_s) * flow_velocity_suction ** 2 / (2*g) # m 
 
 
         
     
-
+        # suction_loses = 0 #! Cambiar después
+        # discharge_loses = 0
         total_suction_head   = z1 + pressure_in * (100000) / (water_density * g) + velocity_head_1 - suction_loses
         total_discharge_head = z2 + pressure_out * (100000)/ (water_density * g) + velocity_head_2 + discharge_loses
-        
+        print("PERDIDAS ============================================")
+        print(f"suction_loses: {suction_loses}")
+        print(f"discharge_loses: {discharge_loses}")
+        print("PRESIONES ============================================")
+        print(f"pressure_in: {pressure_in}")
+        print(f"pressure_out: {pressure_out}")
+        print("CABEZAS ============================================")
+        print(f"total_suction_head: {total_suction_head}")
+        print(f"total_discharge_head: {total_discharge_head}")
 
         pump_total = total_discharge_head - total_suction_head
 
@@ -454,10 +551,15 @@ class SecondWindow(Window):
         characterized_pump["pump_total"].append(pump_total)
         characterized_pump["pump_power"].append(electrical_power)
 
-        hydraulic_power = water_density * g *  pressure_out * (100000) * self.flow * (1 / 60000) 
+        hydraulic_power = water_density * g *  pump_total * self.flow * (1 / 60000) 
         characterized_pump["pump_efficiency"].append(hydraulic_power / electrical_power * 100)
         
+        print("DATOS ALMACENADOS **********************************")
         print(characterized_pump)
+        print("voltage_in: ",voltage_in)
+        print("voltage_out: ",voltage_out)
+
+        print("-------------------------------------------------------")
 
     def haalandCalculations(self, e, D, water_viscosity, V):
         Re = (D * V) / (water_viscosity)
@@ -466,92 +568,128 @@ class SecondWindow(Window):
 
     def measurePower(self):
 
-        try:
-            # Connect to the slave
-            serial = serial.Serial(
-                                port='/dev/ttyUSB0',  #! Modify depending on the connection
-                                baudrate=115200,
-                                bytesize=8,
-                                parity='N',
-                                stopbits=1,
-                                xonxoff=0
-                                )
-            master = modbus_rtu.RtuMaster(serial)
-            master.set_timeout(2.0)
-            master.set_verbose(True)
+        data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+        power = (data[3] + (data[4] << 16)) / 10.0 # [W]
+        current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
+        data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+        power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
+        current2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
 
-            data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+        active_power = power + power_2
 
-            power = (data[3] + (data[4] << 16)) / 10.0
-        
-        except Exception as e:
-            print(e)
-        finally:
-            master.close()
-            return power
+        return active_power, current2
 
     def measureTemperature(self):
-        pass
 
-    def measurePressure(self):
-        factor1=0
-        factor2=0
         if characterized_pump["pump_type"] == "roto":
-            factor1=13/1023 
-            factor2=25/1023              
-            ser.write(b"R\n")
+            cs_pin = 8
 
         if characterized_pump["pump_type"] == "triplex": 
-            factor1=13/1023 
-            factor2=400/1023 
-            ser.write(b"T\n")
+              # Use any available GPIO pin
+            cs_pin = 7
+        else:
+            cs_pin = 8
         
-        # time.sleep(1)
-        try:
-            arduino_data = ser.readline().decode('utf-8').rstrip()
-
-            
-            if arduino_data == "Arduino ready": 
-                print(arduino_data)
-                arduino_data = ser.readline().decode('utf-8').rstrip()
-            if arduino_data == "":
-                pressure_in = -1
-                arduino_data = ser.readline().decode('utf-8').rstrip()
-            else:
-                try:
-                    pressure_in = float(arduino_data) * factor1 - 1
-                    print("pressure_in:", pressure_in)
-                except ValueError:
-                    print("Invalid data received:", arduino_data)
-                    pressure_in = 0
-        except serial.SerialException as e:
-            print("Serial Exception:", e)
-            pressure_in = 0
+        return self.read_max6675(cs_pin)
         
 
-            
-        try:
-            arduino_data2 = ser.readline().decode('utf-8').rstrip()
-            
-            
-            if arduino_data2 == "Arduino ready": 
-                print(arduino_data2)
-                arduino_data2 = ser.readline().decode('utf-8').rstrip()
-            if arduino_data2 == "":
-                pressure_out = -1
-                arduino_data2 = ser.readline().decode('utf-8').rstrip()
-            else:
-                try:
-                    pressure_out = float(arduino_data2) * factor2
-                    print("pressure_out:", pressure_out)
-                except ValueError:
-                    print("Invalid data received:", arduino_data2)
-                    pressure_out = 0
-        except serial.SerialException as e:
-            print("Serial Exception:", e)
-            pressure_out = 0
+        
+    def read_max6675(self, cs_pin):
+        # Set the Chip Select (CS) line for the selected MAX6675
+        GPIO.output(cs_pin, GPIO.LOW)
+        
+        # Read raw data from MAX6675
+        raw_data = spi.xfer2([0x00, 0x00])
+        
+        # Convert raw data to temperature in Celsius
+        temperature = ((raw_data[0] << 8) | raw_data[1]) >> 3
+        temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
+        
+        # Release the Chip Select (CS) line
+        GPIO.output(cs_pin, GPIO.HIGH)
+        
+        return temperature
 
-        return pressure_in, pressure_out
+    """ def measurePressure(self):
+        
+        factor_1 = 0 
+        factor_2 = 0
+        adc_read_1 = AnalogIn(ads, ADS.P1)
+        adc_read_2 = AnalogIn(ads, ADS.P2)
+
+        if characterized_pump["pump_type"] == "roto":
+            adc_read_1 = AnalogIn(ads, ADS.P1) 
+            adc_read_2 = AnalogIn(ads, ADS.P2)
+            factor_1 = 13 / 4
+            factor_2 =  25 / 4
+
+
+        if characterized_pump["pump_type"] == "triplex": 
+            adc_read_1 = AnalogIn(ads, ADS.P2)
+            adc_read_2 = AnalogIn(ads, ADS.P3)
+            factor_1 = 13 / 4
+            factor_2 =  400 / 4
+
+        pressure_in  = (adc_read_1.voltage - 0.6) * factor_1  - 1
+        pressure_out = (adc_read_2.voltage - 0.6) * factor_2
+        # factor_1=0
+        # factor_2=0
+        # if characterized_pump["pump_type"] == "roto":
+        #     factor_1=13/1023 
+        #     factor_2=25/1023              
+        #     ser.write(b"R\n")
+
+        # if characterized_pump["pump_type"] == "triplex": 
+        #     factor_1=13/1023 
+        #     factor_2=400/1023 
+        #     ser.write(b"T\n")
+        
+        # # time.sleep(1)
+        # try:
+        #     arduino_data = ser.readline().decode('utf-8').rstrip()
+
+            
+        #     if arduino_data == "Arduino ready": 
+        #         print(arduino_data)
+        #         arduino_data = ser.readline().decode('utf-8').rstrip()
+        #     if arduino_data == "":
+        #         pressure_in = -1
+        #         arduino_data = ser.readline().decode('utf-8').rstrip()
+        #     else:
+        #         try:
+        #             pressure_in = float(arduino_data) * factor_1 - 1
+        #             print("pressure_in:", pressure_in)
+        #         except ValueError:
+        #             print("Invalid data received:", arduino_data)
+        #             pressure_in = 0
+        # except serial.SerialException as e:
+        #     print("Serial Exception:", e)
+        #     pressure_in = 0
+        
+
+            
+        # try:
+        #     arduino_data2 = ser.readline().decode('utf-8').rstrip()
+            
+            
+        #     if arduino_data2 == "Arduino ready": 
+        #         print(arduino_data2)
+        #         arduino_data2 = ser.readline().decode('utf-8').rstrip()
+        #     if arduino_data2 == "":
+        #         pressure_out = -1
+        #         arduino_data2 = ser.readline().decode('utf-8').rstrip()
+        #     else:
+        #         try:
+        #             pressure_out = float(arduino_data2) * factor_2
+        #             print("pressure_out:", pressure_out)
+        #         except ValueError:
+        #             print("Invalid data received:", arduino_data2)
+        #             pressure_out = 0
+        # except serial.SerialException as e:
+        #     print("Serial Exception:", e)
+        #     pressure_out = 0
+
+        return pressure_in, pressure_out """
 
     def countingFlowPulses(self, channel):
 
@@ -559,12 +697,12 @@ class SecondWindow(Window):
             self.flow_measurement_started = True
             self.start_time_flow_measurement = time.time()
             self.flowmeter_pulses += 1
-            # print(f"Pulse number: {self.flowmeter_pulses}")
+            print(f"Pulse number: {self.flowmeter_pulses}")
         else:
-            # print(f"Pulse number: {self.flowmeter_pulses}")
+            print(f"Pulse number: {self.flowmeter_pulses}")
             self.flowmeter_pulses += 1
             
-            if self.flowmeter_pulses == 10:
+            if self.flowmeter_pulses == 3:
                 self.definingFlow()
 
     def definingFlow(self):
@@ -574,11 +712,11 @@ class SecondWindow(Window):
         self.flow_measurement_started = False
         self.flowmeter_pulses = 0
 
-        print(f"Tiempo de inicio: {self.flow_measurement_started}")
-        print(f"Tiempo final: {time.time()}")
-        print(f"Pulse number: {self.flowmeter_pulses}")
-        print(f"Diferencia de tiempo: {time.time() - self.start_time_flow_measurement}")
-        print(f"Flujo final: {self.flow}")
+        # print(f"Tiempo de inicio: {self.flow_measurement_started}")
+        # print(f"Tiempo final: {time.time()}")
+        # print(f"Pulse number: {self.flowmeter_pulses}")
+        # print(f"Diferencia de tiempo: {time.time() - self.start_time_flow_measurement}")
+        # print(f"Flujo final: {self.flow}")
 
         if not self.max_flow_was_defined and self.actual_step == 1:
             self.enableButtonAfterFMeasurement()
@@ -591,67 +729,97 @@ class SecondWindow(Window):
         loop.exec_()
 
 def measureAveragePressure():
-    factor1=0
-    factor2=0
+
+    # measuring_presure = True
+
+    factor_1 = 0 
+    factor_2 = 0
+
+    error = 0.051 #0.12# 0.165308770128903
+    
+
     if characterized_pump["pump_type"] == "roto":
-        factor1=13/1023 
-        factor2=25/1023              
-        ser.write(b"R\n")
+        # adc_read_1 = AnalogIn(ads, ADS.P1)
+        # adc_read_2 = AnalogIn(ads, ADS.P2)
 
-    if characterized_pump["pump_type"] == "triplex": 
-        factor1=13/1023 
-        factor2=400/1023 
-        ser.write(b"T\n")
-    
-    # time.sleep(1)
+        pin_1 = ADS.P1
+        pin_2 = ADS.P2
+        factor_1 = 13 / 4.7
+        factor_2 =  25 / 4.7
+
+
+    elif characterized_pump["pump_type"] == "triplex": 
+        # adc_read_1 = AnalogIn(ads, ADS.P2)
+        # adc_read_2 = AnalogIn(ads, ADS.P3)
+        pin_1 = ADS.P2
+        pin_2 = ADS.P3
+        factor_1 = 13 / 4
+        factor_2 =  400 / 4
+    else:
+        pin_1 = ADS.P1
+        pin_2 = ADS.P2
+
     try:
+        adc_read_1 = AnalogIn(ads, pin_1)
+        adc_read_2 = AnalogIn(ads, pin_2)
 
-        arduino_data = ser.readline().decode('utf-8').rstrip()
+        voltage_in.append(adc_read_1)
+        voltage_out.append(adc_read_2)
+        
+
+        pressure_in  = (adc_read_1.voltage - 0.6  - error) * factor_1 - 1
+        pressure_out = (adc_read_2.voltage - 0.63 - error) * factor_2
+        # print(factor_2)
+    except:
+        pressure_in, pressure_out = measureAveragePressure()
 
         
-        if arduino_data == "Arduino ready": 
-            print(arduino_data)
-            arduino_data = ser.readline().decode('utf-8').rstrip()
-        if arduino_data == "":
-            pressure_in = -1
-            arduino_data = ser.readline().decode('utf-8').rstrip()
-        else:
-            try:
-                pressure_in = float(arduino_data) * factor1 - 1
-                print("pressure_in:", pressure_in)
-            except ValueError:
-                print("Invalid data received:", arduino_data)
-                pressure_in = 0
-
-    except serial.SerialException as e:
-        print("Serial Exception:", e)
-        pressure_in = 0
-        
-    
-    try:
-        arduino_data2 = ser.readline().decode('utf-8').rstrip()
-        
-        
-        if arduino_data2 == "Arduino ready": 
-            print(arduino_data2)
-            arduino_data2 = ser.readline().decode('utf-8').rstrip()
-        if arduino_data2 == "":
-            pressure_out = -1
-            arduino_data2 = ser.readline().decode('utf-8').rstrip()
-        else:
-            try:
-                pressure_out = float(arduino_data2) * factor2
-                print("pressure_out:", pressure_out)
-            except ValueError:
-                print("Invalid data received:", arduino_data)
-                pressure_out = 0
-    
-    except serial.SerialException as e:
-        print("Serial Exception:", e)
-        pressure_out = 0
-        
+    # measuring_presure = False
 
     return pressure_in, pressure_out
+
+    
+def measurePower():
+
+    data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+    power = (data[3] + (data[4] << 16)) / 10.0 # [W]
+    data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+    power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
+
+    active_power = power + power_2
+
+    return active_power
+
+def measureTemperature():
+
+    if characterized_pump["pump_type"] == "roto":
+        cs_pin = 8
+
+    if characterized_pump["pump_type"] == "triplex": 
+            # Use any available GPIO pin
+        cs_pin = 7
+    else:
+        cs_pin = 8
+    
+    return self.read_max6675(cs_pin)
+    
+
+    
+def read_max6675(cs_pin):
+    # Set the Chip Select (CS) line for the selected MAX6675
+    GPIO.output(cs_pin, GPIO.LOW)
+    
+    # Read raw data from MAX6675
+    raw_data = spi.xfer2([0x00, 0x00])
+    
+    # Convert raw data to temperature in Celsius
+    temperature = ((raw_data[0] << 8) | raw_data[1]) >> 3
+    temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
+    
+    # Release the Chip Select (CS) line
+    GPIO.output(cs_pin, GPIO.HIGH)
+    
+    return temperature
 
 
 class checkStabilityOnThread(QObject):
@@ -703,7 +871,7 @@ class checkStabilityOnThread(QObject):
                     self.finished.emit()
                     break
             
-            if time.time() - start_count_stabilization_time >= 1:
+            if time.time() - start_count_stabilization_time >= 10:
                 
                 self.flag.emit(True)
                 self.finished.emit()
@@ -723,28 +891,31 @@ class measureOnThread(QObject):
 
         pressure_in = 0
         pressure_out = 0
-        electrical_power = 1
+        electrical_power = 0
         temperature = 0
+        measuring_presure = True
+        while time.time() - start_time < 5:
 
-        while time.time() - start_time < 2:
-            
-            # if characterized_pump["pump_type"] == "roto":            
-            #     ser.write(b"R\n")
+            p_in, p_out = measureAveragePressure()
 
-            # if characterized_pump["pump_type"] == "triplex": 
-            #     ser.write(b"T\n")
-            # try:            
-            pressure_in,pressure_out = measureAveragePressure()
-                # print(pressure_in, pressure_out)
-                # pressure_in += 0 # adc.read_adc(sensor_1_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
-                # pressure_out += 0 # adc.read_adc(sensor_2_pin, gain=gain) * (4.096/32767) #! * 14.503773773 to psi
-                # electrical_power += self.measurePower()
-                # temperature += self.measureTemperature()
-            # except:
-            #     print("fail")
-            #     break
+            pressure_in += p_in # pressure_in = pressure_in + p_in 
+            pressure_out += p_out
+
+            electrical_power += measurePower()
+            temperature += 20
             measurements_counter += 1
-        
+
+
+
+            # if abs(pressure_out / measurements_counter - p_out) > pressure_out * 0.06:
+
+            #     break
+            
+            # time.sleep(1)
+            
+
+            
+        measuring_presure = False
         pressure_in /= measurements_counter
         pressure_out /= measurements_counter
         electrical_power /= measurements_counter
@@ -770,17 +941,19 @@ class ThirdWindow(Window):
         self.count_button_pushed += 1
         
         if self.count_button_pushed >= 2:
+            # GPIO.remove_event_detect(self.green_button_pin)
+            # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(0).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(0)
             return
 
         self.alerts.setText("Generando reporte")
 
-        characterized_pump["flow"] = [1,2,3,4,5]
+        # characterized_pump["flow"] = [1,2,3,4,5]
         # characterized_pump["pressure"] =  [55, 54.5, 54, 53, 52.5, 51.7, 50, 48.5, 46, 44]
         # characterized_pump["velocity"] =  [1,2,3,4,5,6,7,8,9,10]
         # characterized_pump["elevation"] =  [1,2,3,4,5,6,7,8,9,10]
         # characterized_pump["pump_total"] =  [1,2,3,4,5,6,7,8,9,10]
-        characterized_pump["pump_power"] =  [6,12,14,20,22]
+        # characterized_pump["pump_power"] =  [6,12,14,20,22]
         # characterized_pump["pump_efficiency"] =  [0,10,20,20,25,30,40,70,60,50]
         
         # Finding most efficient point
@@ -794,19 +967,33 @@ class ThirdWindow(Window):
         # Generate the graphs of power, pressure, efficiency vs flow
 
         
-        print(f'Size of flow array: {len(characterized_pump["flow"])}')
-        print(f'Size of pump_power array: {len(characterized_pump["pump_power"])}')
-        plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (L/min)","Potencia (kW)")
+        flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png")
+        flow_curve, power_curve = flow_vs_pump_power.plotter()
         self.progressBar.setValue(30)
 
-        print(f'Size of flow array: {len(characterized_pump["flow"])}')
-        print(f'Size of pressure array: {len(characterized_pump["pressure"])}')
-        plotter(characterized_pump["flow"], characterized_pump["pressure"], "FlowVsHead.png","Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)")
-        self.progressBar.setValue(40)
 
-        print(f'Size of flow array: {len(characterized_pump["flow"])}')
-        print(f'Size of pump_efficiency array: {len(characterized_pump["pump_efficiency"])}')
-        plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"], "FlowVsEfficiency.png","Flujo vs Eficiencia","Flujo (L/min)","Eficiencia (%)")
+        flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png")
+        _, head_curve = flow_vs_pressure.plotter()
+        self.progressBar.setValue(40)
+        
+        flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png")
+        flow_vs_pump_efficiency.plotter()
+
+
+        # f = open('example.txt', 'w')
+
+        
+
+        # hydraulic_power_curve = 998.8 * 9.798 *  head_curve * flow_curve * (1 / 60000) 
+
+        # efficiency_curve = hydraulic_power_curve / power_curve
+
+        # with open('readme.txt', 'w') as f:
+        #     f.write(hydraulic_power_curve)
+        #     f
+
+
+        # flow_vs_pump_efficiency.plotInterpolatedCurves(flow_curve, efficiency_curve)
         self.progressBar.setValue(50)
 
         # Generate a html file that is going to be used as a base for the pdf generation
@@ -841,8 +1028,9 @@ class ThirdWindow(Window):
 
 
 def closeApp(widget):
-    widget.close()
-    os.system("shutdown now -h") #shut down the Pi -h is or -r will reset
+    pass
+    # widget.close()
+    # os.system("shutdown now") #shut down the Pi -h is or -r will reset
 
 def turnOnLed(led_pin):
 
@@ -853,8 +1041,8 @@ def turnOnLed(led_pin):
 if __name__ == '__main__':
 
     GPIO.setmode(GPIO.BCM)
-    ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0)
-    ser.reset_input_buffer()
+    # ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0)
+    # ser.reset_input_buffer()
 
     app = QtWidgets.QApplication(sys.argv)
 
@@ -862,8 +1050,7 @@ if __name__ == '__main__':
     screen_width = screen.availableGeometry().width()
     screen_height = screen.availableGeometry().height()
 
-    # widget.setFixedWidth(screen_width)
-    # widget.setFixedHeight(screen_height)
+    
 
     widget = QtWidgets.QStackedWidget()
     information_window = FirstWindow("Information_screen.ui", screen_width)
@@ -873,6 +1060,7 @@ if __name__ == '__main__':
     measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
     widget.addWidget(measurements_window)
 
+    # Flowmeter pins definition     ******************************************************************************
 
     if characterized_pump["pump_type"] == "roto":
         flowmeter_pin = 4 #! Definir bien los pines
@@ -886,10 +1074,26 @@ if __name__ == '__main__':
     
     GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 500)
 
+    # Temperature pins              ******************************************************************************
+    # Set the GPIO pins for the Chip Select (CS) lines to OUTPUT
+    GPIO.setup(8, GPIO.OUT)
+    GPIO.setup(7, GPIO.OUT)
 
-    red_button_pin = 7 # Button to close the app
+    
+    
+
+    # Red button pin definitions    ******************************************************************************
+
+    red_button_pin = 22 # Button to close the app
     GPIO.setup(red_button_pin, GPIO.IN)
-    GPIO.add_event_detect(red_button_pin, GPIO.RISING, callback = lambda x: closeApp(widget))
+    print(str(GPIO.input(red_button_pin)))
+    GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
+
+    green_button_pin = 27 # Button to close the app
+    GPIO.setup(green_button_pin, GPIO.IN)
+    print(str(GPIO.input(green_button_pin)))
+    GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = information_window.goToNextTask, bouncetime = 2000)
+    # GPIO.add_event_detect(green_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
 
     green_led_pin = 0 #! Define pins
     GPIO.setup(green_led_pin,GPIO.OUT)
@@ -899,7 +1103,8 @@ if __name__ == '__main__':
 
     report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
-
+    widget.setFixedWidth(screen_width)
+    widget.setFixedHeight(screen_height)
     widget.show()
 
 

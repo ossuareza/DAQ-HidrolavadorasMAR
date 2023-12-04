@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-root-analysis",
+            "type": "shell",
+            "command": "cmake",
+            "args": ["--build", "${workspaceFolder}", "--target", "root_analysis"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "build-wkhtmltopdf-report",
+            "type": "shell",
+            "command": "cmake",
+            "args": ["--build", "${workspaceFolder}", "--target", "wkhtmltopdf_report"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            }
+        }
+    ]
+}
