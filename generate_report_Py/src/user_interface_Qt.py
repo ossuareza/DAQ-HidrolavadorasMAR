@@ -70,7 +70,8 @@ import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 
 testing_interface = False
-
+use_wattmeter_1 = False
+use_wattmeter_2 = False
 # Initialize the I2C interface
 i2c = busio.I2C(board.SCL, board.SDA)
 
@@ -84,31 +85,34 @@ from modbus_tk import modbus_rtu
 
 
 # Wattmeters ***************************************************
-wattmeter_1 = serial.Serial(
-                       port='/dev/ttyS0',
-                       baudrate=9600,
-                       bytesize=8,
-                       parity='N',
-                       stopbits=1,
-                       xonxoff=0
-                      )
 
-master = modbus_rtu.RtuMaster(wattmeter_1)
-master.set_timeout(2.0)
-master.set_verbose(True)
+if use_wattmeter_1:
+    wattmeter_1 = serial.Serial(
+                        port='/dev/ttyS0',
+                        baudrate=9600,
+                        bytesize=8,
+                        parity='N',
+                        stopbits=1,
+                        xonxoff=0
+                        )
 
-wattmeter_2 = serial.Serial(
-                       port='/dev/ttyAMA5',
-                       baudrate=9600,
-                       bytesize=8,
-                       parity='N',
-                       stopbits=1,
-                       xonxoff=0
-                      )
+    master = modbus_rtu.RtuMaster(wattmeter_1)
+    master.set_timeout(2.0)
+    master.set_verbose(True)
 
-master2 = modbus_rtu.RtuMaster(wattmeter_2)
-master2.set_timeout(2.0)
-master2.set_verbose(True)
+if use_wattmeter_2:
+    wattmeter_2 = serial.Serial(
+                        port='/dev/ttyAMA5',
+                        baudrate=9600,
+                        bytesize=8,
+                        parity='N',
+                        stopbits=1,
+                        xonxoff=0
+                        )
+
+    master2 = modbus_rtu.RtuMaster(wattmeter_2)
+    master2.set_timeout(2.0)
+    master2.set_verbose(True)
 
 measuring_presure = False
 
@@ -608,15 +612,22 @@ class SecondWindow(Window):
         return f_raiz ** 2
 
     def measurePower(self):
+        if use_wattmeter_1:
+            data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            power = (data[3] + (data[4] << 16)) / 10.0 # [W]
+            current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
+        if use_wattmeter_2:
+            data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
+            current2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
 
-        data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-        power = (data[3] + (data[4] << 16)) / 10.0 # [W]
-        current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
-        data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-        power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
-        current2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
-
-        active_power = power + power_2
+        if use_wattmeter_1:
+            active_power = power + power_2
+        elif use_wattmeter_2:
+            active_power = power_2
+        else:
+            active_power = 0
+            current2 = 0
 
         return active_power, current2
 
@@ -652,7 +663,7 @@ class SecondWindow(Window):
         return temperature
 
 
-    def countingFlowPulses(self, channel):
+    def countingFlowPulses(self):
 
         if not self.flow_measurement_started:
             self.flow_measurement_started = True
@@ -822,7 +833,7 @@ class checkStabilityOnThread(QObject):
             
 
             # Search for unstable values
-            if abs(pressure_1 - average_m_1/data_counter) > 0.5 * average_m_1/data_counter or abs(pressure_2 - average_m_2/data_counter) > 0.5 * average_m_2/data_counter:
+            if abs(pressure_1 - average_m_1/data_counter) > abs(0.5 * average_m_1/data_counter) or abs(pressure_2 - average_m_2/data_counter) > abs(0.5 * average_m_2/data_counter):
                 average_m_1 = 0
                 average_m_2 = 0
                 data_counter = 0
@@ -1010,6 +1021,15 @@ def turnOnLed(led_pin):
 
     GPIO.output(led_pin,GPIO.HIGH)
 
+def detectPulses(widget, flowmeter_pin):
+    print(widget)
+    print("Pulso detectado")
+    # time.sleep(0.001)
+    if GPIO.input(flowmeter_pin) == 1:
+        widget.countingFlowPulses()
+
+        
+
 
 
 if __name__ == '__main__':
@@ -1044,9 +1064,10 @@ if __name__ == '__main__':
         flowmeter_pin = 4
     #measurements_window.start_timer.connect(measurements_window.countFlowTime)
     
-    GPIO.setup(flowmeter_pin, GPIO.IN)
+    GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
-    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000)
+    # GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000)
+    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = lambda x: detectPulses(measurements_window, flowmeter_pin), bouncetime = 1000)
 
     # Temperature pins              ******************************************************************************
     # Set the GPIO pins for the Chip Select (CS) lines to OUTPUT
@@ -1064,7 +1085,7 @@ if __name__ == '__main__':
     GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
 
     green_button_pin = 27 # Button to close the app
-    GPIO.setup(green_button_pin, GPIO.IN)
+    GPIO.setup(green_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     print(str(GPIO.input(green_button_pin)))
     GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget), bouncetime = 2000)
     # GPIO.add_event_detect(green_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
