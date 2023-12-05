@@ -54,6 +54,7 @@ characterized_pump = {
     "total_measurements": 0
 }
 
+print(os.getcwd())
 
 # water_density_df = pd.read_excel("data/density/Densidad_agua.xlsx") # Load table for water densities at different temperatures
 water_properties_path = os.path.join("data", "water_properties", "Propiedades_agua.xlsx")
@@ -67,6 +68,8 @@ import board
 import busio
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
+
+testing_interface = False
 
 # Initialize the I2C interface
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -108,7 +111,7 @@ master2.set_timeout(2.0)
 master2.set_verbose(True)
 
 measuring_presure = False
-testing_interface = True
+
 
 pressure_in_global = 0
 pressure_out_global = 0
@@ -222,14 +225,8 @@ class SecondWindow(Window):
         self.flow_measurement_started = False
         self.start_time_flow_measurement = 0
         self.flow = 0
-        self.pulses_per_liter = 0 #! Define conversion factor
 
         self.max_flow = 0
-
-        # self.pressure_in = 0 #! May be don't needed
-        # self.pressure_out = 0
-        # self.power = 0
-        # self.temperature = 0
 
         self.actual_step = 0
         self.progressBar.setMaximum(100)
@@ -244,16 +241,73 @@ class SecondWindow(Window):
         self.timer.timeout.connect(self.showSensorsData)
         self.timer.start(1000)
 
-        # self.timer_flow_measurement.timeout.connect(self.definingFlow)
-        # self.timer_flow_measurement.start(500)
-
-        # self.flow_measurement_time = 10 # sec
         self.max_flow_was_defined = False
+
+    def reset_variables(self):
+        self.alerts.setText("Abra la válvula totalmente")
+        self.alerts.setStyleSheet(f''' color: green ''')
+        
+
+        self.label_fo.setStyleSheet(f"font-size: {self.screen_width // 80}px; background-color: lightgreen")
+        self.label_fo.hide()
+        self.lcdNumber_fo.hide()
+        self.label_fo_units.hide()
+
+        self.pushButton.clicked.connect(self.goToNextTask)
+
+        self.flowmeter_pulses = 0
+        
+        self.actual_flow = 0
+        self.flow_measurement_started = False
+        self.start_time_flow_measurement = 0
+        self.flow = 0
+
+        self.max_flow = 0
+
+        self.actual_step = 0
+        self.progressBar.setMaximum(100)
+        self.progressBar.setValue(0)
+
+        self.different_apertures = [0, 0, 0, 0, 0]
+
+        self.timer = QTimer(self)
+        self.timer_flow_measurement = QTimer(self)
+
+        self.timer.timeout.connect(self.defineButtonState)
+        self.timer.timeout.connect(self.showSensorsData)
+        self.timer.start(1000)
+
+        characterized_pump = {
+            "pump_type": "",
+            "service_order" : "", 
+            "date" : "", 
+            "delegate" : "", 
+            "model" : "",
+
+            "motor_speed" : 0, 
+            "power" : 0, 
+            "parking_slot" : 0,
+            "test_number" : 0,
+            
+            "flow" : [], 
+            "pressure" : [], 
+            "velocity" : [], 
+            "elevation" : [], 
+            "pump_total" : [], 
+            "pump_power" : [], 
+            "pump_efficiency" : [],
+            "final_flow" : 0,
+            "final_head" : 0, 
+            "final_efficiency" : 0,
+            "total_measurements": 0
+        }
+
+
 
         
     def defineButtonState(self):
         # Hold pushButton disabled while a requirement is not achieved
-        if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2:# and self.actual_step != 1:
+        if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2 and self.actual_step != 1:
             if self.flow >= self.different_apertures[self.actual_step // 2]:# and (self.actual_step % 2 == 0 or self.actual_step == 1):
                 self.pushButton.setEnabled(True)
 
@@ -338,12 +392,6 @@ class SecondWindow(Window):
                     
             self.thread1.start() 
 
-            # self.thread1.finished.connect(
-            #     lambda: self.pushButton.setEnabled(True)
-            # )
-
-            # self.storeMeasurement()
-
     def enableButtonAfterFMeasurement(self):
         self.pushButton.setEnabled(True)
 
@@ -382,8 +430,7 @@ class SecondWindow(Window):
             self.thread2.finished.connect(self.thread2.deleteLater)
             self.measure_on_thread.measurements_ready.connect(self.storeMeasurement)
             
-            self.thread2.start() 
-            # self.measure_on_thread.flag.connect(self.measurementsAverageFinished)
+            self.thread2.start()
 
             self.actual_step += 1
         else:
@@ -391,10 +438,13 @@ class SecondWindow(Window):
             self.alerts.setStyleSheet(f''' color: red ''')
             time.sleep(1)
 
-    # def measurementsAverageFinished(self):
-
     def showSensorsData(self):
-        if not measuring_presure and not testing_interface:
+
+        if testing_interface:
+            
+            return
+
+        if not measuring_presure:
             pressure_in, pressure_out = measurePressure() # self.measurePressure()
             self.lcdNumber_pin.display(pressure_in * 14.503773773)
             self.lcdNumber_pout.display(pressure_out * 14.503773773)
@@ -743,8 +793,6 @@ class checkStabilityOnThread(QObject):
 
     def check(self):
         
-        
-
         average_m_1 = 0
         average_m_2 = 0
         data_counter = 0
@@ -762,13 +810,25 @@ class checkStabilityOnThread(QObject):
             average_m_2 += pressure_2
 
             data_counter += 1
+            
+            print("No se ha hallado estabilidad =============================================")
+            print("Presure_in: ", pressure_1)
+            print("Presure_out: ", pressure_2)
+            print("Presure_in_M: ", average_m_1)
+            print("Presure_out_M: ", average_m_2)
+            print("ERROR_1: ", pressure_1 - average_m_1/data_counter)
+            print("ERROR_2: ", pressure_2 - average_m_2/data_counter)
+
+            
 
             # Search for unstable values
-            if abs(pressure_1 - average_m_1/data_counter) > 0.06 * average_m_1/data_counter or abs(pressure_2 - average_m_2/data_counter) > 0.06 * average_m_2/data_counter:
+            if abs(pressure_1 - average_m_1/data_counter) > 0.5 * average_m_1/data_counter or abs(pressure_2 - average_m_2/data_counter) > 0.5 * average_m_2/data_counter:
                 average_m_1 = 0
                 average_m_2 = 0
                 data_counter = 0
                 start_count_stabilization_time = time.time()
+                
+                print("Entró")
 
                 if time.time() - start_checking_process_time >= 60:
                     self.flag.emit(False)
@@ -852,6 +912,8 @@ class ThirdWindow(Window):
             # GPIO.remove_event_detect(self.green_button_pin)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(0).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(0)
+            reset_variables()
+            
             return
 
         self.alerts.setText("Generando reporte")
@@ -933,6 +995,10 @@ class ThirdWindow(Window):
 
 
 
+def next(widget):
+    widget.currentWidget().goToNextTask()
+
+    # widget.widget(widget_index).goToNextTask()
 
 
 def closeApp(widget):
@@ -980,7 +1046,7 @@ if __name__ == '__main__':
     
     GPIO.setup(flowmeter_pin, GPIO.IN)
     
-    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 500)
+    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000)
 
     # Temperature pins              ******************************************************************************
     # Set the GPIO pins for the Chip Select (CS) lines to OUTPUT
@@ -1000,7 +1066,7 @@ if __name__ == '__main__':
     green_button_pin = 27 # Button to close the app
     GPIO.setup(green_button_pin, GPIO.IN)
     print(str(GPIO.input(green_button_pin)))
-    GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = information_window.goToNextTask, bouncetime = 2000)
+    GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget), bouncetime = 2000)
     # GPIO.add_event_detect(green_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
 
     green_led_pin = 0 #! Define pins
@@ -1011,8 +1077,8 @@ if __name__ == '__main__':
 
     report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
-    widget.setFixedWidth(screen_width)
-    widget.setFixedHeight(screen_height)
+    # widget.setFixedWidth(screen_width)
+    # widget.setFixedHeight(screen_height)
     widget.show()
 
 

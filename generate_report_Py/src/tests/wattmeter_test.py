@@ -83,9 +83,9 @@ while True:
 	powerFactor2 = data2[8] / 100.0
 	alarm2 = data2[9] # 0 = no alarm
 	# print("Segundaaaaaaaaaaaaaaaaa")
-	# print('Voltage 2 [V]\t: ', voltage2)
-	# print('Current 2 [A]\t: ', current2)
-	# print('Power 2 [W]\t: ', power2) # active power (V * I * power factor)
+	print('Voltage 2 [V]\t: ', voltage2)
+	print('Current 2 [A]\t: ', current2)
+	print('Power 2 [W]\t: ', power2) # active power (V * I * power factor)
 	print("=====================================")
 
 	# print("Potencia activa:", power + power2)
