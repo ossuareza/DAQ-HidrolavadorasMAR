@@ -81,7 +81,7 @@ if __name__ == '__main__':
     flowmeter_pin = 4
     
     GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = lambda x: detectPulses(red_button_pin), bouncetime = 1000)   
+    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = lambda x: detectPulses(flowmeter_pin), bouncetime = 1000)   
     
 
     # Button pin definitions    ******************************************************************************
