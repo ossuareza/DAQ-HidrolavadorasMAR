@@ -69,7 +69,7 @@ import busio
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 
-testing_interface = False
+testing_interface = True
 use_wattmeter_1 = False
 use_wattmeter_2 = False
 # Initialize the I2C interface
@@ -1023,11 +1023,9 @@ def turnOnLed(led_pin):
 
 def detectPulses(widget, flowmeter_pin):
     print(widget)
-    print("Pulso detectado")
-    # time.sleep(0.001)
-    if GPIO.input(flowmeter_pin) == 1:
-        widget.countingFlowPulses()
 
+    if GPIO.input(flowmeter_pin) == 0:
+        print("Pulso detectado")
         
 
 
@@ -1067,8 +1065,8 @@ if __name__ == '__main__':
     GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
     # GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000)
-    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = lambda x: detectPulses(measurements_window, flowmeter_pin), bouncetime = 1000)
-
+    # GPIO.add_event_detect(flowmeter_pin, GPIO.LOW, callback = lambda x: detectPulses(measurements_window, flowmeter_pin), bouncetime = 1000)
+    GPIO.add_event_detect(flowmeter_pin, GPIO.LOW, callback = detectPulses(measurements_window,flowmeter_pin), bouncetime = 1000)
     # Temperature pins              ******************************************************************************
     # Set the GPIO pins for the Chip Select (CS) lines to OUTPUT
     GPIO.setup(8, GPIO.OUT)
