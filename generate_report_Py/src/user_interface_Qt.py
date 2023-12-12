@@ -663,7 +663,7 @@ class SecondWindow(Window):
         return temperature
 
 
-    def countingFlowPulses(self):
+    def countingFlowPulses(self, channel):
 
         if not self.flow_measurement_started:
             self.flow_measurement_started = True
@@ -1066,7 +1066,7 @@ def closeApp(widget, button_pin):
         time.sleep(0.01)
 
 
-        
+
     # widget.close()
     # os.system("shutdown now") #shut down the Pi -h is or -r will reset
 
