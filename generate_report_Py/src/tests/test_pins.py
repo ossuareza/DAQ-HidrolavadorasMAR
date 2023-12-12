@@ -1,18 +1,7 @@
 import RPi.GPIO as GPIO
 import time
 
-GPIO.setmode(GPIO.BCM)
 
-flowmeter_pin = 4
-red_button_pin = 22
-green_button_pin = 27
-
-
-pins = [4, 22, 27]
-
-for i in pins:
-    GPIO.setup(i,GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    # GPIO.setup(i, GPIO.IN)
 
 
 
@@ -78,6 +67,18 @@ def detectPulses(flowmeter_pin):
 
 if __name__ == '__main__':
     
+    GPIO.setmode(GPIO.BCM)
+
+    """ flowmeter_pin = 4
+    red_button_pin = 22
+    green_button_pin = 27
+
+
+    pins = [4, 22, 27]
+
+    for i in pins:
+        GPIO.setup(i,GPIO.IN, pull_up_down=GPIO.PUD_UP) """
+    # GPIO.setup(i, GPIO.IN)
     flowmeter_pin = 4
     
     GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)

@@ -1030,7 +1030,7 @@ def next(widget, button_pin):
         
         if second_flank_detected_time - first_flank_detected_time >= 1:
             # Signal has stayed in the new state for at least 1 second
-            print("Flank detected and stayed for at least 1 second.")
+            print("Green button pressed.")
             widget.currentWidget().goToNextTask()
             break
 
@@ -1062,7 +1062,7 @@ def closeApp(widget, button_pin):
         
         if second_flank_detected_time - first_flank_detected_time >= 1:
             # Signal has stayed in the new state for at least 1 second
-            print("Flank detected and stayed for at least 1 second.")
+            print("Red button pressed.")
             break
 
         elif time.time() - first_flank_detected_time >= 3:
@@ -1086,7 +1086,7 @@ def detectPulses(widget, flowmeter_pin):
     print(widget)
 
     if GPIO.input(flowmeter_pin) == 0:
-        print("Pulso detectado")
+        print("Flowmeter pulse detected.")
         
 
 
