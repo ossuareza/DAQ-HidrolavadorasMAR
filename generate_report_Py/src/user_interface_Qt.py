@@ -281,7 +281,8 @@ class SecondWindow(Window):
         self.timer.timeout.connect(self.showSensorsData)
         self.timer.start(1000)
 
-        global characterized_pump = {
+        global characterized_pump 
+        characterized_pump = {
             "pump_type": "",
             "service_order" : "", 
             "date" : "", 
