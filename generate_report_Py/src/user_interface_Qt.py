@@ -1025,7 +1025,7 @@ def next(widget, button_pin):
             widget.currentWidget().goToNextTask()
             break
 
-        elif time.time() - first_flank_detected_time >= 1.5:
+        elif time.time() - first_flank_detected_time >= 3:
             return
         
         previous_state = current_state
@@ -1054,10 +1054,9 @@ def closeApp(widget, button_pin):
         if second_flank_detected_time - first_flank_detected_time >= 1:
             # Signal has stayed in the new state for at least 1 second
             print("Flank detected and stayed for at least 1 second.")
-            widget.currentWidget().goToNextTask()
             break
 
-        elif time.time() - first_flank_detected_time >= 1.5:
+        elif time.time() - first_flank_detected_time >= 3:
             return
         
         previous_state = current_state
@@ -1133,12 +1132,12 @@ if __name__ == '__main__':
     red_button_pin = 22 # Button to close the app
     GPIO.setup(red_button_pin, GPIO.IN)
     print(str(GPIO.input(red_button_pin)))
-    GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget, red_button_pin))
+    GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget, red_button_pin), bouncetime = 1000)
 
     green_button_pin = 27 # Button to close the app
     GPIO.setup(green_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     print(str(GPIO.input(green_button_pin)))
-    GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget, green_button_pin), bouncetime = 2000)
+    GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget, green_button_pin), bouncetime = 1000)
     # GPIO.add_event_detect(green_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
 
     green_led_pin = 0 #! Define pins

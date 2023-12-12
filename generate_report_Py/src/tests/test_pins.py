@@ -13,30 +13,86 @@ pins = [4, 22, 27]
 for i in pins:
     GPIO.setup(i,GPIO.IN, pull_up_down=GPIO.PUD_UP)
     # GPIO.setup(i, GPIO.IN)
+
+
+
+def next(button_pin):
+
+    previous_state = GPIO.input(button_pin)
+    first_flank_detected_time = time.time()
+    second_flank_detected_time = 0
+
+    while True:
+        current_state = GPIO.input(button_pin)
+        #print(f"pin {4}: {str(GPIO.input(4))}")
+        if current_state != previous_state:
+            # Flank detected
+            second_flank_detected_time = time.time()
+        
+        if second_flank_detected_time - first_flank_detected_time >= 1:
+            # Signal has stayed in the new state for at least 1 second
+            print("Green button pressed.")
+            #! widget.currentWidget().goToNextTask()
+            break
+
+        elif time.time() - first_flank_detected_time >= 3:
+            return
+        
+        previous_state = current_state
+        
+        # Add a small delay to avoid high CPU usage
+        time.sleep(0.01)
+
+
+def closeApp(button_pin):
+
+    previous_state = GPIO.input(button_pin)
+    first_flank_detected_time = time.time()
+    second_flank_detected_time = 0
+
+    while True:
+        current_state = GPIO.input(button_pin)
+        #print(f"pin {4}: {str(GPIO.input(4))}")
+        if current_state != previous_state:
+            # Flank detected
+            second_flank_detected_time = time.time()
+        
+        if second_flank_detected_time - first_flank_detected_time >= 1:
+            # Signal has stayed in the new state for at least 1 second
+            print("Red button pressed.")
+            break
+
+        elif time.time() - first_flank_detected_time >= 3:
+            return
+        
+        previous_state = current_state
+        
+        # Add a small delay to avoid high CPU usage
+        time.sleep(0.01)
   
+def detectPulses(flowmeter_pin):
+
+    print("Pulso detectado")
 
 
-previous_state = GPIO.input(4)
-flank_detected_time = None
-pin_number = 4
-while True:
-    current_state = GPIO.input(4)
-    #print(f"pin {4}: {str(GPIO.input(4))}")
-    if current_state != previous_state:
-        # Flank detected
-        flank_detected_time = time.time()
+
+if __name__ == '__main__':
     
-    if flank_detected_time is not None and time.time() - flank_detected_time >= 1:
-        # Signal has stayed in the new state for at least 1 second
-        print("Flank detected and stayed for at least 1 second.")
-        break
+    flowmeter_pin = 4
     
-    previous_state = current_state
+    GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = lambda x: detectPulses(red_button_pin), bouncetime = 1000)   
     
-    # Add a small delay to avoid high CPU usage
-    time.sleep(0.01)
 
+    # Button pin definitions    ******************************************************************************
 
+    red_button_pin = 22 # Button to close the app
+    GPIO.setup(red_button_pin, GPIO.IN)
+    GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(red_button_pin), bouncetime = 1000)
+
+    green_button_pin = 27 # Button to close the app
+    GPIO.setup(green_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(green_button_pin), bouncetime = 1000)
 
     # print(f"pin {4}: {str(GPIO.input(4))}")
     #if GPIO.input(4) == 0:
