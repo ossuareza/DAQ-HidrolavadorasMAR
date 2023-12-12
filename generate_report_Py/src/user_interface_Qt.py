@@ -69,9 +69,9 @@ import busio
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 
-testing_interface = True
-use_wattmeter_1 = False
-use_wattmeter_2 = False
+testing_interface = False
+use_wattmeter_1 = True
+use_wattmeter_2 = True
 # Initialize the I2C interface
 i2c = busio.I2C(board.SCL, board.SDA)
 
