@@ -1000,19 +1000,6 @@ class ThirdWindow(Window):
         self.pushButton.setText("Caracterizar otra bomba")
 
 
-        
- #! Una idea para poder lidiar con las interrupciones de GPIO en caso de que hayan problemas       
-""" class GpioThread(QThread):
-    event_detected = pyqtSignal(int)
-    def __init__(self, *args, **kwargs):
-        QThread.__init__(self, *args, **kwargs)
-        self.queue = Queue()
-        GPIO.add_event_detect(channel, GPIO.BOTH, callback=self.queue.put)
-
-    def run(self):
-        while True:
-            self.event_detected.emit(self.queue.get()) """
-
 
 
 

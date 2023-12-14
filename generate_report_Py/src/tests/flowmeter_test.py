@@ -18,6 +18,8 @@ new_bounce_time = None
 
 def countingFlowPulses():
 
+    global flow_measurement_started, start_time_flow_measurement, flowmeter_pulses
+    
     if not flow_measurement_started:
         flow_measurement_started = True
         start_time_flow_measurement = time.time()
@@ -31,7 +33,7 @@ def countingFlowPulses():
             definingFlow()
 
 def definingFlow():
-    
+    global flow, flow_measurement_started, flowmeter_pulses
     # if time.time() - start_time_flow_measurement >= flow_measurement_time and flow_measurement_started:
     flow = ((flowmeter_pulses - 1)/ (time.time() - start_time_flow_measurement) ) * 60
     flow_measurement_started = False
@@ -45,6 +47,7 @@ def definingFlow():
 
 def detectPulses():
     
+    global first_pulse_received, last_pulse_received_time, new_bounce_time
     # Start counting the time between pulses
     if not first_pulse_received:
         first_pulse_received = True
