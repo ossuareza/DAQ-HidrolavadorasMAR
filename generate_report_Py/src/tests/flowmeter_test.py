@@ -48,6 +48,18 @@ def definingFlow():
 def detectPulses():
     
     global first_pulse_received, last_pulse_received_time, new_bounce_time
+
+    if new_bounce_time is not None:
+        print("HO")
+        print("Expected Bounce time: ",time.time() - last_pulse_received_time)
+        print("New Bounce Time: ", new_bounce_time)
+        if abs(time.time() - last_pulse_received_time) > new_bounce_time:
+            print("LA")
+            countingFlowPulses()
+    else:
+        countingFlowPulses()
+
+
     # Start counting the time between pulses
     if not first_pulse_received:
         first_pulse_received = True
@@ -67,14 +79,7 @@ def detectPulses():
         # new_bounce_time = max(time_between_pulses[-4:]) 
 
         
-    if new_bounce_time is not None:
-        print("HO")
-        print("Expected Bounce time: ",time.time() - last_pulse_received_time)
-        if abs(time.time() - last_pulse_received_time) > new_bounce_time:
-            print("LA")
-            countingFlowPulses()
-    else:
-        countingFlowPulses()
+    
 
 
 
