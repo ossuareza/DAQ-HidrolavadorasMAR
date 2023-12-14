@@ -341,14 +341,14 @@ class SecondWindow(Window):
         
         if self.actual_step == -1:
 
-            # flowmeter_pin = 4
-            # if characterized_pump["pump_type"] == "roto":
-            #     flowmeter_pin = 4 
-            # elif characterized_pump["pump_type"] == "triplex":
-            #     flowmeter_pin = 17
+            flowmeter_pin = 4
+            if characterized_pump["pump_type"] == "roto":
+                flowmeter_pin = 4 
+            elif characterized_pump["pump_type"] == "triplex":
+                flowmeter_pin = 17
                 
-            # GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            # GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = self.countingFlowPulses, bouncetime = 1000)
+            GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = self.countingFlowPulses)
 
             self.alerts.setText("Abra la válvula completamente")
             self.alerts.setStyleSheet(f''' color: green ''')
@@ -1101,7 +1101,7 @@ if __name__ == '__main__':
     measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
     widget.addWidget(measurements_window)
 
-    # Flowmeter pins definition     ******************************************************************************
+    """ # Flowmeter pins definition     ******************************************************************************
 
     if characterized_pump["pump_type"] == "roto":
         flowmeter_pin = 4 #! Definir bien los pines
@@ -1115,7 +1115,10 @@ if __name__ == '__main__':
     
     # GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000)
     # GPIO.add_event_detect(flowmeter_pin, GPIO.LOW, callback = lambda x: detectPulses(measurements_window, flowmeter_pin), bouncetime = 1000)
-    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000)
+    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000) """
+
+
+
     # Temperature pins              ******************************************************************************
     # Set the GPIO pins for the Chip Select (CS) lines to OUTPUT
     GPIO.setup(8, GPIO.OUT)
