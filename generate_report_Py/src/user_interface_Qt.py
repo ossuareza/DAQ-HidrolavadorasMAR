@@ -730,7 +730,7 @@ def measurePressure():
         pin_1 = ADS.P1
         pin_2 = ADS.P2
         factor_1 = 13 / 4.7
-        factor_2 =  25 / 4.7
+        factor_2 =  25 / (4.8197-0.6421)
 
 
     elif characterized_pump["pump_type"] == "triplex": 
@@ -751,7 +751,7 @@ def measurePressure():
         
 
         pressure_in  = (adc_read_1.voltage - 0.6  - error) * factor_1 - 1
-        pressure_out = (adc_read_2.voltage - 0.63 - error) * factor_2
+        pressure_out = (adc_read_2.voltage - 0.6421) * factor_2
         # print(factor_2)
     except:
         pressure_in, pressure_out = measurePressure()
