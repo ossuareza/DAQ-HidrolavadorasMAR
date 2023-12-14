@@ -119,7 +119,7 @@ measuring_presure = False
 pressure_in_global = 0
 pressure_out_global = 0
 
-flowmeter_pin = 0
+
 
 voltage_out = []
 voltage_in = []
@@ -180,7 +180,7 @@ class FirstWindow(Window):
         self.alerts.setText("Seleccione un tipo de bomba y diligencie las casillas")
         self.alerts.setStyleSheet(f''' color: green ''')
 
-        
+        self.reset_enabled = False
     
     def goToNextTask(self,*channel):
         
@@ -195,7 +195,10 @@ class FirstWindow(Window):
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(1).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(1)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.currentWidget().goToNextTask, bouncetime = 2000)
-            widget.currentWidget().reset_variables()
+
+            if self.reset_enabled:
+                widget.currentWidget().reset_variables()
+                self.reset_enabled = False
         else:
             self.alerts.setText("Debe seleccionar un tipo de bomba")
             self.alerts.setStyleSheet(f''' color: red ''')
@@ -965,6 +968,7 @@ class ThirdWindow(Window):
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(0).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(0)
             
+            widget.currentWidget().reset_enabled = True
             global characterized_pump 
             characterized_pump = {
                 "pump_type": "",
