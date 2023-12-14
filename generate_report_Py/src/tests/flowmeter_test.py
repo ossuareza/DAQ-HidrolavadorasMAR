@@ -19,7 +19,7 @@ new_bounce_time = None
 def countingFlowPulses():
 
     global flow_measurement_started, start_time_flow_measurement, flowmeter_pulses
-    
+
     if not flow_measurement_started:
         flow_measurement_started = True
         start_time_flow_measurement = time.time()
@@ -74,17 +74,17 @@ def detectPulses():
     else:
         countingFlowPulses()
 
-    
-    
-
-    
-
 
 
 
 if __name__ == '__main__':
 
+    GPIO.setmode(GPIO.BCM)
+    
     flowmeter_pin = 4
         
     GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = lambda x: detectPulses(), bouncetime = 1000)   
+
+    while True:
+        pass
