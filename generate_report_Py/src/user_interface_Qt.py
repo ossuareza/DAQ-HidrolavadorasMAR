@@ -196,7 +196,7 @@ class FirstWindow(Window):
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(1).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(1)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.currentWidget().goToNextTask, bouncetime = 2000)
-            # currentWidget()
+            widget.currentWidget().reset_variables()
         else:
             self.alerts.setText("Debe seleccionar un tipo de bomba")
             self.alerts.setStyleSheet(f''' color: red ''')
@@ -232,6 +232,11 @@ class SecondWindow(Window):
 
         self.max_flow = 0
 
+        self.time_between_pulses = []
+        self.first_pulse_received = False
+        self.last_pulse_received_time = 0
+        self.new_bounce_time = None
+
         self.actual_step = -1
         self.progressBar.setMaximum(100)
         self.progressBar.setValue(0)
@@ -241,11 +246,14 @@ class SecondWindow(Window):
         self.timer = QTimer(self)
         self.timer_flow_measurement = QTimer(self)
 
+        self.flowmeter_pin = None
+
         self.timer.timeout.connect(self.defineButtonState)
         self.timer.timeout.connect(self.showSensorsData)
         self.timer.start(1000)
 
         self.max_flow_was_defined = False
+        self.are_variables_reset = False
 
     def reset_variables(self):
         self.alerts.setText("Preparando el sistema")
@@ -268,6 +276,11 @@ class SecondWindow(Window):
 
         self.max_flow = 0
 
+        self.time_between_pulses = []
+        self.first_pulse_received = False
+        self.last_pulse_received_time = 0
+        self.new_bounce_time = None
+
         self.actual_step = -1
         self.progressBar.setMaximum(100)
         self.progressBar.setValue(0)
@@ -281,31 +294,8 @@ class SecondWindow(Window):
         self.timer.timeout.connect(self.showSensorsData)
         self.timer.start(1000)
 
-        global characterized_pump 
-        characterized_pump = {
-            "pump_type": "",
-            "service_order" : "", 
-            "date" : "", 
-            "delegate" : "", 
-            "model" : "",
+        self.are_variables_reset = True
 
-            "motor_speed" : 0, 
-            "power" : 0, 
-            "parking_slot" : 0,
-            "test_number" : 0,
-            
-            "flow" : [], 
-            "pressure" : [], 
-            "velocity" : [], 
-            "elevation" : [], 
-            "pump_total" : [], 
-            "pump_power" : [], 
-            "pump_efficiency" : [],
-            "final_flow" : 0,
-            "final_head" : 0, 
-            "final_efficiency" : 0,
-            "total_measurements": 0
-        }
 
 
 
@@ -340,17 +330,22 @@ class SecondWindow(Window):
         print(f"Medición actual: {self.actual_step}")
         
         if self.actual_step == -1:
+            
+            if self.are_variables_reset:
+                GPIO.remove_event_detect(self.flowmeter_pin)
+                self.are_variables_reset = False
 
-            flowmeter_pin = 4
+
+            self.flowmeter_pin = 4
             if characterized_pump["pump_type"] == "roto":
-                flowmeter_pin = 4 
+                self.flowmeter_pin = 4 
                 print("Caudalímetro de las bombas rotodinámicas")
             elif characterized_pump["pump_type"] == "triplex":
-                flowmeter_pin = 17
+                self.flowmeter_pin = 17
                 print("Caudalímetro de las bombas triplex")
                 
-            GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = self.countingFlowPulses)
+            GPIO.setup(self.flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.add_event_detect(self.flowmeter_pin, GPIO.RISING, callback = self.detectPulses)
 
             self.alerts.setText("Abra la válvula completamente")
             self.alerts.setStyleSheet(f''' color: green ''')
@@ -675,7 +670,39 @@ class SecondWindow(Window):
         return temperature
 
 
-    def countingFlowPulses(self, channel):
+    def detectPulses(self, channel):
+    
+
+        if self.new_bounce_time is not None:
+            # print("HO")
+            # print("Expected Bounce time: ",time.time() - last_pulse_received_time)
+            # print("New Bounce Time: ", new_bounce_time)
+            if abs(time.time() - self.last_pulse_received_time) > self.new_bounce_time:
+                print("LA")
+                self.countingFlowPulses()
+        else:
+            self.countingFlowPulses()
+
+
+        # Start counting the time between pulses
+        if not self.first_pulse_received:
+            self.first_pulse_received = True
+            self.last_pulse_received_time = time.time()
+
+        # Store the time between pulses, so you can look for a pattern
+        elif self.last_pulse_received_time != 0:
+            self.time_between_pulses.append(time.time() -  self.last_pulse_received_time)
+            self.last_pulse_received_time = time.time()
+
+            # print(time_between_pulses)
+
+        if len(self.time_between_pulses) > 4:
+            self.new_bounce_time = sum(self.time_between_pulses[-4:]) / 4 # Take the new bounce time as the average of the times stored
+
+            # ANOTHER ALTERNATIVES
+            # new_bounce_time = max(time_between_pulses[-4:])
+
+    def countingFlowPulses(self):
 
         if not self.flow_measurement_started:
             self.flow_measurement_started = True
@@ -721,28 +748,33 @@ def measurePressure():
 
     factor_1 = 0 
     factor_2 = 0
-
-    error = 0.051 #0.12# 0.165308770128903
+    pin_1 = ADS.P0
+    pin_2 = ADS.P1
+    offset_1 = 0
+    offset_2 = 0
     
 
     if characterized_pump["pump_type"] == "roto":
         # adc_read_1 = AnalogIn(ads, ADS.P1)
         # adc_read_2 = AnalogIn(ads, ADS.P2)
 
-        pin_1 = ADS.P1
-        pin_2 = ADS.P2
-        factor_1 = 13 / 4.7
-        factor_2 =  25 / (4.8197-0.6421)
+        pin_1 = ADS.P2
+        pin_2 = ADS.P3
+        factor_1 = 13 / (4.905 - 0.713)
+        factor_2 =  25 / (4.8197 - 0.6421)
+
+        offset_1 = 0.713
+        offset_2 = 0.6421
 
 
     elif characterized_pump["pump_type"] == "triplex": 
-        pin_1 = ADS.P2
-        pin_2 = ADS.P3
-        factor_1 = 13 / 4
-        factor_2 =  400 / 4
-    else:
-        pin_1 = ADS.P1
-        pin_2 = ADS.P2
+        pin_1 = ADS.P0
+        pin_2 = ADS.P1
+        factor_1 = 13 / (4.8224 - 0.456) 
+        factor_2 =  400 / (4.7382 - 0.6726)
+
+        offset_1 = 0.456
+        offset_2 = 0.6726
 
     try:
         adc_read_1 = AnalogIn(ads, pin_1)
@@ -752,8 +784,8 @@ def measurePressure():
         voltage_out.append(adc_read_2)
         
 
-        pressure_in  = (adc_read_1.voltage - 0.6  - error) * factor_1 - 1
-        pressure_out = (adc_read_2.voltage - 0.6421) * factor_2
+        pressure_in  = (adc_read_1.voltage - offset_1) * factor_1 - 1
+        pressure_out = (adc_read_2.voltage - offset_2) * factor_2
         # print(factor_2)
     except:
         pressure_in, pressure_out = measurePressure()
@@ -935,7 +967,32 @@ class ThirdWindow(Window):
             # GPIO.remove_event_detect(self.green_button_pin)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(0).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(0)
-            reset_variables()
+            
+            global characterized_pump 
+            characterized_pump = {
+                "pump_type": "",
+                "service_order" : "", 
+                "date" : "", 
+                "delegate" : "", 
+                "model" : "",
+
+                "motor_speed" : 0, 
+                "power" : 0, 
+                "parking_slot" : 0,
+                "test_number" : 0,
+                
+                "flow" : [], 
+                "pressure" : [], 
+                "velocity" : [], 
+                "elevation" : [], 
+                "pump_total" : [], 
+                "pump_power" : [], 
+                "pump_efficiency" : [],
+                "final_flow" : 0,
+                "final_head" : 0, 
+                "final_efficiency" : 0,
+                "total_measurements": 0
+            }
             
             return
 
@@ -1072,11 +1129,7 @@ def turnOnLed(led_pin):
 
     GPIO.output(led_pin,GPIO.HIGH)
 
-def detectPulses(widget, flowmeter_pin):
-    print(widget)
-
-    if GPIO.input(flowmeter_pin) == 0:
-        print("Flowmeter pulse detected.")
+ 
         
 
 
