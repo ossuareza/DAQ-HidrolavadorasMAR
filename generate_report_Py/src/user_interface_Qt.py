@@ -344,8 +344,10 @@ class SecondWindow(Window):
             flowmeter_pin = 4
             if characterized_pump["pump_type"] == "roto":
                 flowmeter_pin = 4 
+                print("Caudalímetro de las bombas rotodinámicas")
             elif characterized_pump["pump_type"] == "triplex":
                 flowmeter_pin = 17
+                print("Caudalímetro de las bombas triplex")
                 
             GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = self.countingFlowPulses)
