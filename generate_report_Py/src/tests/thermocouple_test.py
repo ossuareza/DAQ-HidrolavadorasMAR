@@ -42,12 +42,12 @@ try:
         temperature_2 = max6675_2.get()
         
         if temperature_1 is not None:
-            print(f"Sensor 1 Temperature: {temperature_1}°C")
+            print(f"Sensor 1 Temperature: {temperature_1}Â°C")
         else:
             print("Error reading from Sensor 1")
 
         if temperature_2 is not None:
-            print(f"Sensor 2 Temperature: {temperature_2}°C")
+            print(f"Sensor 2 Temperature: {temperature_2}Â°C")
         else:
             print("Error reading from Sensor 2")
 
@@ -63,9 +63,7 @@ import spidev
 import time
 
 # Set up SPI communication
-spi = spidev.SpiDev()
-spi.open(0, 0)  # Use CE0 (Chip Enable 0) for the SPI communication
-spi.max_speed_hz = 5000000  # You may need to adjust this based on your sensor's specifications
+
 
 
 # sck = Pin(11, Pin.OUT) # GPIO 11 pin 23
@@ -73,13 +71,16 @@ spi.max_speed_hz = 5000000  # You may need to adjust this based on your sensor's
 # so = Pin(9, Pin.IN) # GPIO 9 pin 21
 
 # GPIO pin numbers for the Chip Select (CS) lines for each MAX6675
-cs_pin_1 = 8  # Use any available GPIO pin
-cs_pin_2 = 7  # Use another available GPIO pin
+cs_pin_1 = 0  # Use any available GPIO pin
+cs_pin_2 = 1  # Use another available GPIO pin
 
 # Function to read temperature from MAX6675
 def read_max6675(cs_pin):
+    spi = spidev.SpiDev()
+    spi.open(0, cs_pin)  # Use CE0 (Chip Enable 0) for the SPI communication
+    spi.max_speed_hz = 5000000  # You may need to adjust this based on your sensor's specifications
     # Set the Chip Select (CS) line for the selected MAX6675
-    GPIO.output(cs_pin, GPIO.LOW)
+ 
     
     # Read raw data from MAX6675
     raw_data = spi.xfer2([0x00, 0x00])
@@ -89,24 +90,20 @@ def read_max6675(cs_pin):
     temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
     
     # Release the Chip Select (CS) line
-    GPIO.output(cs_pin, GPIO.HIGH)
-    
+    #GPIO.output(cs_pin, GPIO.LOW)
+    spi.close()
     return temperature
 
 try:
-    # Set up GPIO mode
-    GPIO.setmode(GPIO.BCM)
-    
-    # Set the GPIO pins for the Chip Select (CS) lines to OUTPUT
-    GPIO.setup(cs_pin_1, GPIO.OUT)
-    GPIO.setup(cs_pin_2, GPIO.OUT)
+  
     
     while True:
         temperature_1 = read_max6675(cs_pin_1)
         temperature_2 = read_max6675(cs_pin_2)
+       
         
-        print(f"Sensor 1 Temperature: {temperature_1}°C")
-        print(f"Sensor 2 Temperature: {temperature_2}°C")
+        print(f"Sensor 1 Temperature: {temperature_1} °C")
+        print(f"Sensor 2 Temperature: {temperature_2} °C")
         
         time.sleep(1)  # You can adjust the polling interval as needed
 
@@ -117,4 +114,3 @@ except KeyboardInterrupt:
 GPIO.cleanup()
 
 # Close SPI connection
-spi.close()

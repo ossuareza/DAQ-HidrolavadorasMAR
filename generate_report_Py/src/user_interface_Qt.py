@@ -16,8 +16,7 @@ import serial
 import spidev
 
 spi = spidev.SpiDev()
-spi.open(0, 0)  # Use CE0 (Chip Enable 0) for the SPI communication
-spi.max_speed_hz = 5000000  # You may need to adjust this based on your sensor's specifications
+
 # import modbus_tk.defines as cst
 # from modbus_tk import modbus_rtu
 
@@ -641,21 +640,22 @@ class SecondWindow(Window):
     def measureTemperature(self):
 
         if characterized_pump["pump_type"] == "roto":
-            cs_pin = 8
+            cs_pin = 0
 
         if characterized_pump["pump_type"] == "triplex": 
               # Use any available GPIO pin
-            cs_pin = 7
+            cs_pin = 1
         else:
-            cs_pin = 8
+            cs_pin = 0
         
         return self.read_max6675(cs_pin)
         
 
         
     def read_max6675(self, cs_pin):
-        # Set the Chip Select (CS) line for the selected MAX6675
-        GPIO.output(cs_pin, GPIO.LOW)
+        
+        spi.open(0, cs_pin)  # Use CE0 (Chip Enable 0) for the SPI communication
+        spi.max_speed_hz = 5000000  # You may need to adjust this based on your sensor's specifications
         
         # Read raw data from MAX6675
         raw_data = spi.xfer2([0x00, 0x00])
@@ -663,9 +663,6 @@ class SecondWindow(Window):
         # Convert raw data to temperature in Celsius
         temperature = ((raw_data[0] << 8) | raw_data[1]) >> 3
         temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
-        
-        # Release the Chip Select (CS) line
-        GPIO.output(cs_pin, GPIO.HIGH)
         
         return temperature
 
@@ -1172,12 +1169,6 @@ if __name__ == '__main__':
     # GPIO.add_event_detect(flowmeter_pin, GPIO.LOW, callback = lambda x: detectPulses(measurements_window, flowmeter_pin), bouncetime = 1000)
     GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000) """
 
-
-
-    # Temperature pins              ******************************************************************************
-    # Set the GPIO pins for the Chip Select (CS) lines to OUTPUT
-    GPIO.setup(8, GPIO.OUT)
-    GPIO.setup(7, GPIO.OUT)
 
     
     
