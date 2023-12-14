@@ -68,8 +68,9 @@ def detectPulses():
 
         
     if new_bounce_time is not None:
-
+        print("HO")
         if abs(time.time() - last_pulse_received_time) > new_bounce_time:
+            print("LA")
             countingFlowPulses()
     else:
         countingFlowPulses()
@@ -80,7 +81,7 @@ def detectPulses():
 if __name__ == '__main__':
 
     GPIO.setmode(GPIO.BCM)
-    
+
     flowmeter_pin = 4
         
     GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
