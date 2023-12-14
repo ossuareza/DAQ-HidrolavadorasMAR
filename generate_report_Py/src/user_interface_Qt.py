@@ -212,7 +212,7 @@ class SecondWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
 
-        self.alerts.setText("Abra la válvula totalmente")
+        self.alerts.setText("Preparando el sistema")
         self.alerts.setStyleSheet(f''' color: green ''')
         
 
@@ -248,7 +248,7 @@ class SecondWindow(Window):
         self.max_flow_was_defined = False
 
     def reset_variables(self):
-        self.alerts.setText("Abra la válvula totalmente")
+        self.alerts.setText("Preparando el sistema")
         self.alerts.setStyleSheet(f''' color: green ''')
         
 
