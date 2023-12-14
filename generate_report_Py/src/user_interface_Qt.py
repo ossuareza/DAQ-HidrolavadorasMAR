@@ -232,7 +232,7 @@ class SecondWindow(Window):
 
         self.max_flow = 0
 
-        self.actual_step = 0
+        self.actual_step = -1
         self.progressBar.setMaximum(100)
         self.progressBar.setValue(0)
 
@@ -268,7 +268,7 @@ class SecondWindow(Window):
 
         self.max_flow = 0
 
-        self.actual_step = 0
+        self.actual_step = -1
         self.progressBar.setMaximum(100)
         self.progressBar.setValue(0)
 
