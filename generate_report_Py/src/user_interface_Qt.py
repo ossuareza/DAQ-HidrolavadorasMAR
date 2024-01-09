@@ -200,25 +200,39 @@ class FirstWindow(Window):
         self.reset_enabled = False
     
     def goToNextTask(self,*channel):
-        
+        alert_message = ""
+        alert_boolean = False
+
+        if (self.lE_1_service_order.text() == '' or self.lE_2_delegate.text() == '' or self.lE_3_date.text() == '' or self.lE_4_pump_model.text() == '' 
+            or self.lE_5_motor_speed.text() == '' or self.lE_6_pump_power.text() == '' or self.lE_7_parking_slot.text() == ''):
+            alert_message = "Debe diligenciar todos los campos \n"
+            alert_boolean = True
+            
 
         if self.roto.isChecked():
             characterized_pump["pump_type"] = "roto"
-            widget.setCurrentIndex(2)
+            
         elif self.triplex.isChecked():
             characterized_pump["pump_type"] = "triplex" 
 
-            # GPIO.remove_event_detect(self.green_button_pin)
-            # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(1).goToNextTask, bouncetime = 2000)
-            widget.setCurrentIndex(2)
-            # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.currentWidget().goToNextTask, bouncetime = 2000)
-
-            if self.reset_enabled:
-                widget.currentWidget().reset_variables()
-                self.reset_enabled = False
         else:
-            self.alerts.setText("Debe seleccionar un tipo de bomba")
+            alert_message += "Debe seleccionar un tipo de bomba"
+            alert_boolean = True
+
+        print(alert_boolean)
+        if alert_boolean:
+            print(alert_message)
+            self.alerts.setText(alert_message)
             self.alerts.setStyleSheet(f''' color: red ''')
+        
+        else:
+            widget.setCurrentIndex(1)
+
+        if self.reset_enabled:
+                widget.currentWidget().resetVariables()
+                self.reset_enabled = False
+
+
 
 
         characterized_pump["service_order"] = self.lE_1_service_order.text()
@@ -229,6 +243,8 @@ class FirstWindow(Window):
         characterized_pump["power"] = self.lE_6_pump_power.text()
         characterized_pump["parking_slot"] = self.lE_7_parking_slot.text()
         characterized_pump["total_measurements"] = int(self.measurements.text())
+
+        print(characterized_pump)
 
 class SecondWindow(Window):
     def __init__(self, path, screen_width):
@@ -277,7 +293,22 @@ class SecondWindow(Window):
         self.max_flow_was_defined = False
         self.are_variables_reset = False
 
-    def reset_variables(self):
+    def resetVariables(self):
+
+        global characterized_pump 
+            
+        characterized_pump["flow"] =  []
+        characterized_pump["pressure"] =  []
+        characterized_pump["velocity"] =  []
+        characterized_pump["elevation"] =  []
+        characterized_pump["pump_total"] =  []
+        characterized_pump["pump_power"] =  []
+        characterized_pump["pump_efficiency"] =  []
+        characterized_pump["final_flow"] =  0
+        characterized_pump["final_head"] =  0
+        characterized_pump["final_efficiency"] =  0
+        
+        
         self.alerts.setText("Preparando el sistema")
         self.alerts.setStyleSheet(f''' color: green ''')
         
@@ -342,6 +373,7 @@ class SecondWindow(Window):
             # GPIO.remove_event_detect(self.green_button_pin)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(2).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(2)
+            widget.currentWidget().goToNextTask()
             return
         
         # If the push button is not enabled, do not allow to execute the routines.
@@ -981,6 +1013,7 @@ class ThirdWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
         self.pushButton.clicked.connect(self.goToNextTask)
+        self.pushButton_2.clicked.connect(self.resetMeasurementProcess)
         self.count_button_pushed = 0
 
     def addTableRow(self, table, row_data):
@@ -1060,6 +1093,14 @@ class ThirdWindow(Window):
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(0).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(3)
             
+    def resetMeasurementProcess(self):
+        
+        widget.setCurrentIndex(0)
+            
+        widget.currentWidget().reset_enabled = True
+
+        widget.currentWidget().alerts.setText("Seleccione un tipo de bomba y diligencie las casillas")
+        widget.currentWidget().alerts.setStyleSheet(f''' color: green ''')
             
 
         
@@ -1090,31 +1131,8 @@ class FourthWindow(Window):
             widget.setCurrentIndex(0)
             
             widget.currentWidget().reset_enabled = True
-            global characterized_pump 
-            characterized_pump = {
-                "pump_type": "",
-                "service_order" : "", 
-                "date" : "", 
-                "delegate" : "", 
-                "model" : "",
-
-                "motor_speed" : 0, 
-                "power" : 0, 
-                "parking_slot" : 0,
-                "test_number" : 0,
-                
-                "flow" : [], 
-                "pressure" : [], 
-                "velocity" : [], 
-                "elevation" : [], 
-                "pump_total" : [], 
-                "pump_power" : [], 
-                "pump_efficiency" : [],
-                "final_flow" : 0,
-                "final_head" : 0, 
-                "final_efficiency" : 0,
-                "total_measurements": 0
-            }
+            widget.currentWidget().alerts.setText("Seleccione un tipo de bomba y diligencie las casillas")
+            widget.currentWidget().alerts.setStyleSheet(f''' color: green ''')
             
             return
 
