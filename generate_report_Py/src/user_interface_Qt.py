@@ -4,6 +4,8 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt, QTimer, QThread, QObject, pyqtSignal, QEventLoop
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap, QImage
+
+from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem, QHeaderView
 import argparse
 
 
@@ -202,13 +204,13 @@ class FirstWindow(Window):
 
         if self.roto.isChecked():
             characterized_pump["pump_type"] = "roto"
-            widget.setCurrentIndex(1)
+            widget.setCurrentIndex(2)
         elif self.triplex.isChecked():
             characterized_pump["pump_type"] = "triplex" 
 
             # GPIO.remove_event_detect(self.green_button_pin)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(1).goToNextTask, bouncetime = 2000)
-            widget.setCurrentIndex(1)
+            widget.setCurrentIndex(2)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.currentWidget().goToNextTask, bouncetime = 2000)
 
             if self.reset_enabled:
@@ -974,9 +976,97 @@ class measureOnThread(QObject):
         self.finished.emit()
 
 
+class ThirdWindow(Window):
+    
+    def __init__(self, path, screen_width):
+        super().__init__(path, screen_width)
+        self.pushButton.clicked.connect(self.goToNextTask)
+        self.count_button_pushed = 0
+
+    def addTableRow(self, table, row_data):
+            row = table.rowCount()
+            table.setRowCount(row+1)
+            col = 0
+            for item in row_data:
+                cell = QTableWidgetItem(str(item))
+                table.setItem(row, col, cell)
+                col += 1
+    
+    def goToNextTask(self):
+
+
+        characterized_pump = {
+            "motor_speed" : "3450", 
+            "power" : "750", 
+            "parking_slot" : "1",
+            "test_number" : 5,
+            "service_order" : "23-0814", 
+            "date" : "23/11/2023", 
+            "delegate" : "Felipe Rodriguez", 
+            "model" : "CPM620",
+            "flow" : [], 
+            "pressure" : [], 
+            "velocity" : [], 
+            "elevation" : [], 
+            "pump_total" : [], 
+            "pump_power" : [], 
+            "pump_efficiency" : [],
+            "final_flow" : 0,
+            "final_head" : 0, 
+            "final_efficiency" : 0,
+            "total_measurements": 8
+        }
+
+
+        characterized_pump["flow"] =        [80.5, 71.9, 65.0, 55.8, 50.0, 45.3, 34.8, 35.2]
+        characterized_pump["pressure"] =    [2.12, 31.47, 39.0, 45.5, 49.3, 54.3, 56.4, 56.2]
+        characterized_pump["velocity"] =    [0.045, 0.036, 0.029, 0.022, 0.017, 0.014, 0.008, 0.009]
+        characterized_pump["elevation"] =   [0.655, 0.655, 0.655, 0.655, 0.655, 0.655, 0.655, 0.655]
+        characterized_pump["pump_total"] =  [4.5, 24.7, 29.6, 33.7, 36.0, 39.2, 40.6, 40.3]
+        characterized_pump["pump_power"] =  [672.46, 693.78, 677.58, 651.1, 627.8, 592.3, 575.7, 574.2]
+        characterized_pump["pump_efficiency"] =  [8.9, 41.8, 46.3, 47.2, 46.9, 49.0, 40.0, 40.4]
+
+        self.label_7.setText(characterized_pump["service_order"])
+        self.label_12.setText(characterized_pump["delegate"])
+        self.label_13.setText(characterized_pump["date"])
+        self.label_14.setText(characterized_pump["model"])
+        self.label_15.setText(characterized_pump["motor_speed"] + "  RPM")
+        self.label_16.setText(characterized_pump["power"] + "  W")
+        self.label_17.setText(characterized_pump["parking_slot"])
+        self.label_18.setText(str(characterized_pump["total_measurements"]))
+
+
+
+        self.tableWidget.setColumnCount(characterized_pump['total_measurements'] + 1)
+
+        self.tableWidget.rowCount()
+        #set table header
+        
+        
+        self.tableWidget.setHorizontalHeaderLabels(['Variable'] + [str(i) for i in range(1, characterized_pump['total_measurements'] + 1)])
+
+        self.addTableRow(self.tableWidget, ["Flujo (L/m)"] + characterized_pump['flow'])
+        self.addTableRow(self.tableWidget, ["Presión (psi)"] + characterized_pump['pressure'])
+        self.addTableRow(self.tableWidget, ["Potencia (W)"] + characterized_pump['pump_power'])
+        # self.addTableRow(self.tableWidget, row_4)
+    
+        hheader = self.tableWidget.horizontalHeader()
+        hheader.setSectionResizeMode(QHeaderView.ResizeToContents)
+
+        self.count_button_pushed += 1
+        
+        if self.count_button_pushed >= 2:
+            # GPIO.remove_event_detect(self.green_button_pin)
+            # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(0).goToNextTask, bouncetime = 2000)
+            widget.setCurrentIndex(3)
+            
+            
+
+        
+        
 
             
-class ThirdWindow(Window):
+class FourthWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
         self.pushButton.clicked.connect(self.goToNextTask)
@@ -984,6 +1074,10 @@ class ThirdWindow(Window):
         self.alerts.setText("Listo para generar el reporte")
         self.alerts.setStyleSheet(f''' color: green ''')
         self.count_button_pushed = 0
+
+
+    
+
 
     
     def goToNextTask(self):
@@ -1225,7 +1319,9 @@ if __name__ == '__main__':
         red_led_pin = 0
         GPIO.setup(red_led_pin,GPIO.OUT)
 
-    report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
+    resume_window = ThirdWindow('Resume_screen.ui', screen_width)
+    widget.addWidget(resume_window)
+    report_generation_window = FourthWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
     # widget.setFixedWidth(screen_width)
     # widget.setFixedHeight(screen_height)
