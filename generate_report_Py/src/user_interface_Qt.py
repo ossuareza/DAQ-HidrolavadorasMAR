@@ -1343,7 +1343,7 @@ if __name__ == '__main__':
         print(str(GPIO.input(red_button_pin)))
         GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget, red_button_pin), bouncetime = 1000)
 
-        green_button_pin = 27 # Button to close the app
+        green_button_pin = 27 # Button to advance though the user interface
         GPIO.setup(green_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         print(str(GPIO.input(green_button_pin)))
         GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget, green_button_pin), bouncetime = 1000)
