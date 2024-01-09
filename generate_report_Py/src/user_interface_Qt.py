@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPixmap, QImage
 
 from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem, QHeaderView
 import argparse
-
+import json
 
 parser = argparse.ArgumentParser()
 
@@ -1190,8 +1190,26 @@ class FourthWindow(Window):
         generate_html(characterized_pump)
         self.progressBar.setValue(70)
 
+        json_object = json.dumps(dictionary, indent=4)
+ 
+        # resd to sample.json
+        with open("data/json/test_count.json", "r") as openfile:
+            json_object = json.load(openfile)
+
         # Generate the final report in pdf
-        generate_pdf(characterized_pump["test_number"])
+            
+        characterized_pump['test_number'] = json_object["test_number"] + 1
+        
+        generate_pdf(characterized_pump['test_number'])
+
+        
+        json_object = json.dumps({"test_number" : characterized_pump['test_number']}, indent=4)
+ 
+        # Writing to sample.json
+        with open("data/json/test_count.json", "w") as outfile:
+            outfile.write(json_object)
+
+            
         self.progressBar.setValue(100)
 
         self.alerts.setText("Generación de reporte finalizado")
