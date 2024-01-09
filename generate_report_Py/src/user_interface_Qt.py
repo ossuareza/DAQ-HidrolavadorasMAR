@@ -4,6 +4,23 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt, QTimer, QThread, QObject, pyqtSignal, QEventLoop
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap, QImage
+import argparse
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--testing_interface', action="store_true", help="Test the interface without sensors connections")
+
+parser.add_argument('--use_wattmeter_1', action="store_true", help="Run the software with the wattmeter_1")
+parser.add_argument('--use_wattmeter_2', action="store_true", help="Run the software with the wattmeter_1")
+args = parser.parse_args()
+
+
+
+testing_interface = args.testing_interface
+use_wattmeter_1 = args.use_wattmeter_1
+use_wattmeter_2 = args.use_wattmeter_2
+
 
 from six.moves.queue import Queue
 # from threading import *
@@ -12,16 +29,33 @@ from generate_html import generate_html
 from generate_pdf import generate_pdf
 from plotter import Plotter
 
-import serial
-import spidev
+if not testing_interface:
+    import serial
+    import spidev
+    import RPi.GPIO as GPIO
 
-spi = spidev.SpiDev()
+    spi = spidev.SpiDev()
+
+    # ADC I2C communication ******************************************************************************
+
+    import board
+    import busio
+    import adafruit_ads1x15.ads1115 as ADS
+    from adafruit_ads1x15.analog_in import AnalogIn
+
+    # Initialize the I2C interface
+    i2c = busio.I2C(board.SCL, board.SDA)
+
+    # Create an ADS1115 object
+    ads = ADS.ADS1115(i2c)
+
+    import modbus_tk.defines as cst
+    from modbus_tk import modbus_rtu
 
 # import modbus_tk.defines as cst
 # from modbus_tk import modbus_rtu
 
 import time
-import RPi.GPIO as GPIO
 
 import numpy as np
 import pandas as pd
@@ -61,31 +95,12 @@ water_properties_df = pd.read_excel(water_properties_path) # Load table for wate
 
 
 
-# ADC I2C communication ******************************************************************************
 
-import board
-import busio
-import adafruit_ads1x15.ads1115 as ADS
-from adafruit_ads1x15.analog_in import AnalogIn
-
-testing_interface = False
-use_wattmeter_1 = True
-use_wattmeter_2 = True
-# Initialize the I2C interface
-i2c = busio.I2C(board.SCL, board.SDA)
-
-# Create an ADS1115 object
-
-if not testing_interface:
-    ads = ADS.ADS1115(i2c)
-
-import modbus_tk.defines as cst
-from modbus_tk import modbus_rtu
 
 
 # Wattmeters ***************************************************
 
-if use_wattmeter_1:
+if use_wattmeter_1 and not testing_interface:
     wattmeter_1 = serial.Serial(
                         port='/dev/ttyS0',
                         baudrate=9600,
@@ -99,7 +114,7 @@ if use_wattmeter_1:
     master.set_timeout(2.0)
     master.set_verbose(True)
 
-if use_wattmeter_2:
+if use_wattmeter_2 and not testing_interface:
     wattmeter_2 = serial.Serial(
                         port='/dev/ttyAMA5',
                         baudrate=9600,
@@ -208,6 +223,9 @@ class FirstWindow(Window):
         characterized_pump["delegate"] = self.lE_2_delegate.text()
         characterized_pump["date"] = self.lE_3_date.text()
         characterized_pump["model"] = self.lE_4_pump_model.text()
+        characterized_pump["motor_speed"] = self.lE_5_motor_speed.text()
+        characterized_pump["power"] = self.lE_6_pump_power.text()
+        characterized_pump["parking_slot"] = self.lE_7_parking_slot.text()
         characterized_pump["total_measurements"] = int(self.measurements.text())
 
 class SecondWindow(Window):
@@ -312,7 +330,7 @@ class SecondWindow(Window):
 
     def goToNextTask(self):
         print(f"actual_step: {self.actual_step // 2}")
-
+        print(characterized_pump)
         # if self.flow < 40:
         #     GPIO.remove_event_detect(flowmeter_pin)
         #     GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = self.goToNextTask, bouncetime = 1500)
@@ -334,7 +352,8 @@ class SecondWindow(Window):
         if self.actual_step == -1:
             
             if self.are_variables_reset:
-                GPIO.remove_event_detect(self.flowmeter_pin)
+                if not testing_interface:
+                    GPIO.remove_event_detect(self.flowmeter_pin)
                 self.are_variables_reset = False
 
 
@@ -345,9 +364,10 @@ class SecondWindow(Window):
             elif characterized_pump["pump_type"] == "triplex":
                 self.flowmeter_pin = 17
                 print("Caudalímetro de las bombas triplex")
-                
-            GPIO.setup(self.flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(self.flowmeter_pin, GPIO.RISING, callback = self.detectPulses)
+            
+            if not testing_interface:
+                GPIO.setup(self.flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.add_event_detect(self.flowmeter_pin, GPIO.RISING, callback = self.detectPulses)
 
             self.alerts.setText("Abra la válvula completamente")
             self.alerts.setStyleSheet(f''' color: green ''')
@@ -465,10 +485,10 @@ class SecondWindow(Window):
         self.lcdNumber_f.display(self.flow) #! Modify with the pump dictionary
         
 
-        power, current = self.measurePower()
+        power, current = measurePower()
         self.lcdNumber_pw.display(power)
         self.lcdNumber_c.display(current)
-        self.lcdNumber_t.display(20) #self.measureTemperature())
+        self.lcdNumber_t.display(measureTemperature())
 
         # print("Botón rojo: ", str(GPIO.input(22)))
         # print("Botón verde: ", str(GPIO.input(27)))
@@ -620,7 +640,7 @@ class SecondWindow(Window):
         f_raiz = (-1.8 * np.log((( e / D) / 3.7) ** 1.11 + (6.9 / (Re + 0.000001)))) ** (-1) #! Delete the epsilon
         return f_raiz ** 2
 
-    def measurePower(self):
+    """ def measurePower(self):
         if use_wattmeter_1:
             data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
             power = (data[3] + (data[4] << 16)) / 10.0 # [W]
@@ -638,9 +658,9 @@ class SecondWindow(Window):
             active_power = 0
             current2 = 0
 
-        return active_power, current2
+        return active_power, current2 """
 
-    def measureTemperature(self):
+    """ def measureTemperature(self):
 
         if characterized_pump["pump_type"] == "roto":
             cs_pin = 0
@@ -667,7 +687,7 @@ class SecondWindow(Window):
         temperature = ((raw_data[0] << 8) | raw_data[1]) >> 3
         temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
         
-        return temperature
+        return temperature """
 
 
     def detectPulses(self, channel):
@@ -797,34 +817,44 @@ def measurePressure():
 
     
 def measurePower():
+    if use_wattmeter_1:
+        data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+        power = (data[3] + (data[4] << 16)) / 10.0 # [W]
+        current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
+    if use_wattmeter_2:
+        data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+        power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
+        current2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
 
-    data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-    power = (data[3] + (data[4] << 16)) / 10.0 # [W]
-    data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-    power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
+    if use_wattmeter_1:
+        active_power = power + power_2
+    elif use_wattmeter_2:
+        active_power = power_2
+    else:
+        active_power = 0
+        current2 = 0
 
-    active_power = power + power_2
-
-    return active_power
+    return active_power, current2
 
 def measureTemperature():
 
     if characterized_pump["pump_type"] == "roto":
-        cs_pin = 8
+        cs_pin = 0
 
     if characterized_pump["pump_type"] == "triplex": 
             # Use any available GPIO pin
-        cs_pin = 7
+        cs_pin = 1
     else:
-        cs_pin = 8
+        cs_pin = 0
     
     return read_max6675(cs_pin)
     
 
     
 def read_max6675(cs_pin):
-    # Set the Chip Select (CS) line for the selected MAX6675
-    GPIO.output(cs_pin, GPIO.LOW)
+    
+    spi.open(0, cs_pin)  # Use CE0 (Chip Enable 0) for the SPI communication
+    spi.max_speed_hz = 5000000  # You may need to adjust this based on your sensor's specifications
     
     # Read raw data from MAX6675
     raw_data = spi.xfer2([0x00, 0x00])
@@ -832,9 +862,6 @@ def read_max6675(cs_pin):
     # Convert raw data to temperature in Celsius
     temperature = ((raw_data[0] << 8) | raw_data[1]) >> 3
     temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
-    
-    # Release the Chip Select (CS) line
-    GPIO.output(cs_pin, GPIO.HIGH)
     
     return temperature
 
@@ -1137,7 +1164,7 @@ def turnOnLed(led_pin):
 
 if __name__ == '__main__':
 
-    GPIO.setmode(GPIO.BCM)
+   
     # ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0)
     # ser.reset_input_buffer()
 
@@ -1178,23 +1205,25 @@ if __name__ == '__main__':
     
 
     # Button pin definitions    ******************************************************************************
+    if not testing_interface:
+        GPIO.setmode(GPIO.BCM)
+        
+        red_button_pin = 22 # Button to close the app
+        GPIO.setup(red_button_pin, GPIO.IN)
+        print(str(GPIO.input(red_button_pin)))
+        GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget, red_button_pin), bouncetime = 1000)
 
-    red_button_pin = 22 # Button to close the app
-    GPIO.setup(red_button_pin, GPIO.IN)
-    print(str(GPIO.input(red_button_pin)))
-    GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget, red_button_pin), bouncetime = 1000)
+        green_button_pin = 27 # Button to close the app
+        GPIO.setup(green_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        print(str(GPIO.input(green_button_pin)))
+        GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget, green_button_pin), bouncetime = 1000)
+        # GPIO.add_event_detect(green_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
 
-    green_button_pin = 27 # Button to close the app
-    GPIO.setup(green_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    print(str(GPIO.input(green_button_pin)))
-    GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget, green_button_pin), bouncetime = 1000)
-    # GPIO.add_event_detect(green_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
+        green_led_pin = 0 #! Define pins
+        GPIO.setup(green_led_pin,GPIO.OUT)
 
-    green_led_pin = 0 #! Define pins
-    GPIO.setup(green_led_pin,GPIO.OUT)
-
-    red_led_pin = 0
-    GPIO.setup(red_led_pin,GPIO.OUT)
+        red_led_pin = 0
+        GPIO.setup(red_led_pin,GPIO.OUT)
 
     report_generation_window = ThirdWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)

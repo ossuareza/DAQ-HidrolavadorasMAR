@@ -273,7 +273,14 @@
        </spacer>
       </item>
       <item>
-       <layout class="QGridLayout" name="gridLayout" columnstretch="1,3,3,1">
+       <layout class="QGridLayout" name="gridLayout" columnstretch="1,2,3,1">
+        <item row="5" column="1">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>  Potencia de la bomba</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <widget class="QLabel" name="label">
           <property name="text">
@@ -281,37 +288,17 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>  Modelo de la bomba</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <spacer name="horizontalSpacer_8">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="4" column="1">
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>  Número de mediciones a tomar   </string>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="1">
          <widget class="QLabel" name="label_2">
           <property name="text">
            <string>  Encargado de la prueba   </string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>  Modelo de la bomba</string>
           </property>
          </widget>
         </item>
@@ -328,10 +315,54 @@
           </property>
          </spacer>
         </item>
+        <item row="6" column="1">
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>  Puesto de parqueo</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>  Número de mediciones a tomar   </string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <spacer name="horizontalSpacer_8">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="7" column="2">
+         <widget class="QSpinBox" name="measurements">
+          <property name="minimum">
+           <number>5</number>
+          </property>
+          <property name="maximum">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="1">
          <widget class="QLabel" name="label_3">
           <property name="text">
            <string>  Fecha de la prueba   </string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>  Velocidad del motor</string>
           </property>
          </widget>
         </item>
@@ -348,12 +379,25 @@
          <widget class="QLineEdit" name="lE_4_pump_model"/>
         </item>
         <item row="4" column="2">
-         <widget class="QSpinBox" name="measurements">
-          <property name="minimum">
-           <number>5</number>
+         <widget class="QLineEdit" name="lE_5_motor_speed"/>
+        </item>
+        <item row="5" column="2">
+         <widget class="QLineEdit" name="lE_6_pump_power"/>
+        </item>
+        <item row="6" column="2">
+         <widget class="QLineEdit" name="lE_7_parking_slot"/>
+        </item>
+        <item row="5" column="3">
+         <widget class="QLabel" name="label_11">
+          <property name="text">
+           <string>  W</string>
           </property>
-          <property name="maximum">
-           <number>10</number>
+         </widget>
+        </item>
+        <item row="4" column="3">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>  RPM</string>
           </property>
          </widget>
         </item>
