@@ -936,11 +936,11 @@ def measurePower():
 def measureTemperature():
 
     if characterized_pump["pump_type"] == "roto":
-        cs_pin = 1
-
-    if characterized_pump["pump_type"] == "triplex": 
-            # Use any available GPIO pin
         cs_pin = 0
+
+    elif characterized_pump["pump_type"] == "triplex": 
+            # Use any available GPIO pin
+        cs_pin = 1
     else:
         cs_pin = 0
     
