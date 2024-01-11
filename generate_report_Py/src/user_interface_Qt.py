@@ -389,7 +389,7 @@ class SecondWindow(Window):
     def defineButtonState(self):
         # Hold pushButton disabled while a requirement is not achieved
         if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2 and self.actual_step != 1:
-            if self.flow >= self.different_apertures[self.actual_step // 2]:# and (self.actual_step % 2 == 0 or self.actual_step == 1):
+            if (self.flow >= self.different_apertures[self.actual_step // 2] * 0.8 and self.flow <= self.different_apertures[self.actual_step // 2] * 1.2):# and (self.actual_step % 2 == 0 or self.actual_step == 1):
                 self.pushButton.setEnabled(True)
 
         # self.contador_random += 1
