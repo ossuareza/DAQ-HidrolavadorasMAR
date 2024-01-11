@@ -161,8 +161,7 @@ pressure_out_global = 0
 
 
 
-voltage_out = []
-voltage_in = []
+
 
 # !adc = Adafruit_ADS1x15.ADS1115()
 
@@ -681,10 +680,7 @@ class SecondWindow(Window):
         hydraulic_power = water_density * g *  pump_total * self.flow * (1 / 60000) 
         characterized_pump["pump_efficiency"].append(hydraulic_power / electrical_power * 100)
         
-        print("DATOS ALMACENADOS **********************************")
-        print(characterized_pump)
-        print("voltage_in: ",voltage_in)
-        print("voltage_out: ",voltage_out)
+        
 
         print("-------------------------------------------------------")
 
@@ -789,9 +785,7 @@ def measurePressure():
     try:
         adc_read_1 = AnalogIn(ads, pin_1)
         adc_read_2 = AnalogIn(ads, pin_2)
-
-        voltage_in.append(adc_read_1)
-        voltage_out.append(adc_read_2)
+        
         
 
         pressure_in  = (adc_read_1.voltage - offset_1) * factor_1 - 1
