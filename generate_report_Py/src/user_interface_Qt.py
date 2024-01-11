@@ -863,7 +863,7 @@ def measureTemperature():
     else:
         cs_pin = 0
     
-    return read_max6675(cs_pin)
+    return round(read_max6675(cs_pin))
     
 
     
