@@ -902,16 +902,23 @@ def measurePower():
 
         if use_wattmeter_1:
             data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            V_L_1 = data[0] / 10.0 # [V]
             power = (data[3] + (data[4] << 16)) / 10.0 # [W]
-            current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
+
         if use_wattmeter_3:
             data_3 = master3.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            V_L_3 = data_3[0] / 10.0 # [V]
             power_3 = (data_3[3] + (data_3[4] << 16)) / 10.0 # [W]
-            current_3 = (data_3[1] + (data_3[2] << 16)) / 1000.0 # [A]
+
 
         if use_wattmeter_1 and use_wattmeter_3:
             active_power = power + power_3
-            current = current_3
+
+            phi = np.arctan2( np.sqrt(3) * (power - power_2) / (power + power_2))
+
+            V_L = (V_L_1 + V_L_3) / 2
+            
+            current = np.sqrt(3) * (power - power_3) / (V_L * np.sin(phi))
         else:
             active_power = 0
             current = 0
