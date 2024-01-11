@@ -955,7 +955,7 @@ class measureOnThread(QObject):
         electrical_power = 0
         temperature = 0
         measuring_pressure = True
-        while time.time() - start_time < 5 :
+        while time.time() - start_time < 1 :
 
             if testing_interface:
                 measurements_counter += 1
