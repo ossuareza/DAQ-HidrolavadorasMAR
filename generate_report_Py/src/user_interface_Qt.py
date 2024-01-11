@@ -503,7 +503,7 @@ class SecondWindow(Window):
         self.alerts.setText("Caudal máximo medido. Continue con el proceso")
         self.alerts.setStyleSheet(f''' color: green ''')
 
-    def reportProgress(self, n): #! Test function, it should be deleted
+    def reportProgress(self, n): 
         # self.alerts.setText(f"Time: {n}")
         self.alerts.setText("¡¡¡Espere!!! Midiendo estabilidad")
         self.alerts.setStyleSheet(f''' color: blue ''')
@@ -550,27 +550,14 @@ class SecondWindow(Window):
             self.lcdNumber_pin.display(pressure_in * 14.503773773)
             self.lcdNumber_pout.display(pressure_out * 14.503773773)
         # Display sensors data on screen
-        self.lcdNumber_f.display(self.flow) #! Modify with the pump dictionary
-        
-
+        self.lcdNumber_f.display(self.flow)
         power, current = measurePower()
         self.lcdNumber_pw.display(power)
         self.lcdNumber_c.display(current)
         self.lcdNumber_t.display(measureTemperature())
 
-        # print("Botón rojo: ", str(GPIO.input(22)))
-        # print("Botón verde: ", str(GPIO.input(27)))
-
-        # print(f"flow: {self.flow}") 
-        # print(f"pressure_in: {pressure_in}")
-        # print(f"pressure_out: {pressure_out}")
-
         
-    def storeMeasurement(self, measurements): #! Run it in a thread ---------------------------------------------------------------
-        
-        # pressure_in, pressure_out = measurePressure()
-        # electrical_power = self.measurePower()
-        # temperature = 20 # self.measureTemperature()
+    def storeMeasurement(self, measurements): 
 
         pressure_in = measurements[0] # Measurementes come from class measureOnThread method measurementsAverage
         pressure_out = measurements[1]
@@ -670,10 +657,6 @@ class SecondWindow(Window):
         suction_loses = (f_s * (L_s / D_s) + sum_k_s) * flow_velocity_suction ** 2 / (2*g) # m 
 
 
-        
-    
-        # suction_loses = 0 #! Cambiar después
-        # discharge_loses = 0
         total_suction_head   = z1 + pressure_in * (100000) / (water_density * g) + velocity_head_1 - suction_loses
         total_discharge_head = z2 + pressure_out * (100000)/ (water_density * g) + velocity_head_2 + discharge_loses
         print("PERDIDAS ============================================")
@@ -710,65 +693,14 @@ class SecondWindow(Window):
         f_raiz = (-1.8 * np.log((( e / D) / 3.7) ** 1.11 + (6.9 / (Re + 0.000001)))) ** (-1) #! Delete the epsilon
         return f_raiz ** 2
 
-    """ def measurePower(self):
-        if use_wattmeter_1:
-            data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-            power = (data[3] + (data[4] << 16)) / 10.0 # [W]
-            current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
-        if use_wattmeter_2:
-            data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-            power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
-            current2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
-
-        if use_wattmeter_1:
-            active_power = power + power_2
-        elif use_wattmeter_2:
-            active_power = power_2
-        else:
-            active_power = 0
-            current2 = 0
-
-        return active_power, current2 """
-
-    """ def measureTemperature(self):
-
-        if characterized_pump["pump_type"] == "roto":
-            cs_pin = 0
-
-        if characterized_pump["pump_type"] == "triplex": 
-              # Use any available GPIO pin
-            cs_pin = 1
-        else:
-            cs_pin = 0
-        
-        return self.read_max6675(cs_pin)
-        
-
-        
-    def read_max6675(self, cs_pin):
-        
-        spi.open(0, cs_pin)  # Use CE0 (Chip Enable 0) for the SPI communication
-        spi.max_speed_hz = 5000000  # You may need to adjust this based on your sensor's specifications
-        
-        # Read raw data from MAX6675
-        raw_data = spi.xfer2([0x00, 0x00])
-        
-        # Convert raw data to temperature in Celsius
-        temperature = ((raw_data[0] << 8) | raw_data[1]) >> 3
-        temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
-        
-        return temperature """
-
 
     def detectPulses(self, channel):
     
 
         if self.new_bounce_time is not None:
-            # print("HO")
-            # print("Expected Bounce time: ",time.time() - last_pulse_received_time)
-            # print("New Bounce Time: ", new_bounce_time)
+
             if abs(time.time() - self.last_pulse_received_time) > self.new_bounce_time:
-                print("LA")
+                
                 self.countingFlowPulses()
         else:
             self.countingFlowPulses()
@@ -783,8 +715,6 @@ class SecondWindow(Window):
         elif self.last_pulse_received_time != 0:
             self.time_between_pulses.append(time.time() -  self.last_pulse_received_time)
             self.last_pulse_received_time = time.time()
-
-            # print(time_between_pulses)
 
         if len(self.time_between_pulses) > 4:
             self.new_bounce_time = sum(self.time_between_pulses[-4:]) / 4 # Take the new bounce time as the average of the times stored
@@ -813,16 +743,9 @@ class SecondWindow(Window):
         self.flow_measurement_started = False
         self.flowmeter_pulses = 0
 
-        # print(f"Tiempo de inicio: {self.flow_measurement_started}")
-        # print(f"Tiempo final: {time.time()}")
-        # print(f"Pulse number: {self.flowmeter_pulses}")
-        # print(f"Diferencia de tiempo: {time.time() - self.start_time_flow_measurement}")
-        # print(f"Flujo final: {self.flow}")
-
         if not self.max_flow_was_defined and self.actual_step == 1:
             self.enableButtonAfterFMeasurement()
             self.max_flow_was_defined = True
-            # print(self.flow) 
 
     def wait(self, milliseconds):
         loop = QEventLoop()
@@ -845,9 +768,6 @@ def measurePressure():
     
 
     if characterized_pump["pump_type"] == "roto":
-        # adc_read_1 = AnalogIn(ads, ADS.P1)
-        # adc_read_2 = AnalogIn(ads, ADS.P2)
-
         pin_1 = ADS.P2
         pin_2 = ADS.P3
         factor_1 = 13 / (4.905 - 0.713)
@@ -876,7 +796,6 @@ def measurePressure():
 
         pressure_in  = (adc_read_1.voltage - offset_1) * factor_1 - 1
         pressure_out = (adc_read_2.voltage - offset_2) * factor_2
-        # print(factor_2)
     except:
         pressure_in, pressure_out = measurePressure()
 
@@ -940,7 +859,6 @@ def measureTemperature():
         cs_pin = 1
 
     elif characterized_pump["pump_type"] == "triplex": 
-            # Use any available GPIO pin
         cs_pin = 0
     else:
         cs_pin = 0
@@ -991,13 +909,13 @@ class checkStabilityOnThread(QObject):
 
             data_counter += 1
             
-            print("No se ha hallado estabilidad =============================================")
-            print("Presure_in: ", pressure_1)
-            print("Presure_out: ", pressure_2)
-            print("Presure_in_M: ", average_m_1)
-            print("Presure_out_M: ", average_m_2)
-            print("ERROR_1: ", pressure_1 - average_m_1/data_counter)
-            print("ERROR_2: ", pressure_2 - average_m_2/data_counter)
+            # print("No se ha hallado estabilidad =============================================")
+            # print("Presure_in: ", pressure_1)
+            # print("Presure_out: ", pressure_2)
+            # print("Presure_in_M: ", average_m_1)
+            # print("Presure_out_M: ", average_m_2)
+            # print("ERROR_1: ", pressure_1 - average_m_1/data_counter)
+            # print("ERROR_2: ", pressure_2 - average_m_2/data_counter)
 
             
 
@@ -1048,8 +966,8 @@ class measureOnThread(QObject):
             pressure_in += p_in # pressure_in = pressure_in + p_in 
             pressure_out += p_out
 
-            electrical_power += measurePower()
-            temperature += 20
+            electrical_power, _ += measurePower()
+            temperature += measureTemperature()
             measurements_counter += 1
 
 
