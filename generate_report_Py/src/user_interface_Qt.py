@@ -15,17 +15,17 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--testing_interface', action="store_true", help="Test the interface without sensors connections")
 
-parser.add_argument('--use_wattmeter_1', action="store_true", help="Run the software with the wattmeter_1")
-parser.add_argument('--use_wattmeter_2', action="store_true", help="Run the software with the wattmeter_2")
-parser.add_argument('--use_wattmeter_3', action="store_true", help="Run the software with the wattmeter_3")
+parser.add_argument('--not_use_wattmeter_1', action="store_true", help="Run the software with the wattmeter_1")
+parser.add_argument('--not_use_wattmeter_2', action="store_true", help="Run the software with the wattmeter_2")
+parser.add_argument('--not_use_wattmeter_3', action="store_true", help="Run the software with the wattmeter_3")
 args = parser.parse_args()
 
 
 
 testing_interface = args.testing_interface
-use_wattmeter_1 = args.use_wattmeter_1
-use_wattmeter_2 = args.use_wattmeter_2
-use_wattmeter_3 = args.use_wattmeter_3
+use_wattmeter_1 = not args.not_use_wattmeter_1
+use_wattmeter_2 = not args.not_use_wattmeter_2
+use_wattmeter_3 = not args.not_use_wattmeter_3
 
 
 
@@ -936,7 +936,7 @@ def measurePower():
 def measureTemperature():
 
     if characterized_pump["pump_type"] == "roto":
-        print("Holi+++++++++++++++++++++++++++")
+        print("Temperatura rotodinámicas")
         cs_pin = 1
 
     elif characterized_pump["pump_type"] == "triplex": 
