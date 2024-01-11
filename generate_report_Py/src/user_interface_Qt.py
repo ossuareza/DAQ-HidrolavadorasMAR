@@ -135,7 +135,7 @@ if use_wattmeter_2 and not testing_interface:
 
 if use_wattmeter_3 and not testing_interface:
     wattmeter_3 = serial.Serial(
-                        port='',#!'/dev/ttyAMA5',
+                        port='/dev/ttyAMA2',
                         baudrate=9600,
                         bytesize=8,
                         parity='N',
@@ -917,7 +917,7 @@ def measurePower():
             phi = np.arctan2( np.sqrt(3) * (power - power_2) / (power + power_2))
 
             V_L = (V_L_1 + V_L_3) / 2
-            
+
             current = np.sqrt(3) * (power - power_3) / (V_L * np.sin(phi))
         else:
             active_power = 0
