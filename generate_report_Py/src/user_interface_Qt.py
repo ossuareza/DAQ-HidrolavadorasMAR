@@ -9,6 +9,8 @@ from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem, QHeaderView
 import argparse
 import json
 
+# Define how the software id going to be executed
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--testing_interface', action="store_true", help="Test the interface without sensors connections")
@@ -26,13 +28,12 @@ use_wattmeter_2 = args.use_wattmeter_2
 use_wattmeter_3 = args.use_wattmeter_3
 
 
-from six.moves.queue import Queue
-# from threading import *
 
 from generate_html import generate_html
 from generate_pdf import generate_pdf
 from plotter import Plotter
 
+# If this is a interface test, unable the communication protocols, so you can test it without the raspberry or the sensors
 if not testing_interface:
     import serial
     import spidev
@@ -66,6 +67,8 @@ import pandas as pd
 
 from random import random
 
+# Define the data structure used to pass the information across the whole architecture
+
 characterized_pump = {
     "pump_type": "",
     "motor_type": "",
@@ -92,10 +95,10 @@ characterized_pump = {
     "total_measurements": 0
 }
 
-print(os.getcwd())
 
-# water_density_df = pd.read_excel("data/density/Densidad_agua.xlsx") # Load table for water densities at different temperatures
-water_properties_path = os.path.join("data", "water_properties", "Propiedades_agua.xlsx")
+
+
+water_properties_path = os.path.join("data", "water_properties", "Propiedades_agua.xlsx")  # Load table for water densities at different temperatures
 water_properties_df = pd.read_excel(water_properties_path) # Load table for water densities at different temperatures
 
 
@@ -103,7 +106,7 @@ water_properties_df = pd.read_excel(water_properties_path) # Load table for wate
 
 
 
-# Wattmeters ***************************************************
+# Definition of serial communication for the Wattmeters ***************************************************
 
 if use_wattmeter_1 and not testing_interface:
     wattmeter_1 = serial.Serial(
@@ -148,6 +151,8 @@ if use_wattmeter_3 and not testing_interface:
     master3.set_verbose(True)
 
 
+
+
 measuring_pressure = False
 
 
@@ -169,15 +174,13 @@ class Window(QtWidgets.QMainWindow):
 
         self.defineFontSizes(self.centralwidget)
 
-        # Green button pin definitions    ******************************************************************************
-        # Green button pin definitions    ******************************************************************************
 
 
         
         self.green_button_pin = 27
         
         
-    def defineFontSizes(self, main_object):
+    def defineFontSizes(self, main_object): # Adaptative size for text
 
         text_font_size = self.screen_width // 80
         title_font_size = self.screen_width // 64
@@ -223,12 +226,13 @@ class FirstWindow(Window):
 
         global characterized_pump
 
+        # Check if every box was filled in
         if (self.lE_1_service_order.text() == '' or self.lE_2_delegate.text() == '' or self.lE_3_date.text() == '' or self.lE_4_pump_model.text() == '' 
             or self.lE_5_motor_speed.text() == '' or self.lE_6_pump_power.text() == '' or self.lE_7_parking_slot.text() == ''):
             alert_message = "Debe diligenciar todos los campos \n"
             alert_boolean = True
             
-
+        # Check which radio buttons were checked
         if self.roto.isChecked():
             characterized_pump["pump_type"] = "roto"
             
@@ -249,16 +253,16 @@ class FirstWindow(Window):
             alert_message += "Debe seleccionar un tipo de motor"
             alert_boolean = True
 
-        print(alert_boolean)
+        # If there is something to be filled in, report the error
         if alert_boolean:
             print(alert_message)
             self.alerts.setText(alert_message)
             self.alerts.setStyleSheet(f''' color: red ''')
         
         else:
-            widget.setCurrentIndex(1)
+            widget.setCurrentIndex(1) # Go to the next window
 
-        if self.reset_enabled:
+        if self.reset_enabled: # Reset variables if asked
                 widget.currentWidget().resetVariables()
                 self.reset_enabled = False
 
@@ -932,11 +936,11 @@ def measurePower():
 def measureTemperature():
 
     if characterized_pump["pump_type"] == "roto":
-        cs_pin = 0
+        cs_pin = 1
 
     if characterized_pump["pump_type"] == "triplex": 
             # Use any available GPIO pin
-        cs_pin = 1
+        cs_pin = 0
     else:
         cs_pin = 0
     
