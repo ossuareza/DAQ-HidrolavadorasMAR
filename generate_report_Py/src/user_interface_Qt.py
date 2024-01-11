@@ -14,7 +14,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--testing_interface', action="store_true", help="Test the interface without sensors connections")
 
 parser.add_argument('--use_wattmeter_1', action="store_true", help="Run the software with the wattmeter_1")
-parser.add_argument('--use_wattmeter_2', action="store_true", help="Run the software with the wattmeter_1")
+parser.add_argument('--use_wattmeter_2', action="store_true", help="Run the software with the wattmeter_2")
+parser.add_argument('--use_wattmeter_3', action="store_true", help="Run the software with the wattmeter_3")
 args = parser.parse_args()
 
 
@@ -22,6 +23,7 @@ args = parser.parse_args()
 testing_interface = args.testing_interface
 use_wattmeter_1 = args.use_wattmeter_1
 use_wattmeter_2 = args.use_wattmeter_2
+use_wattmeter_3 = args.use_wattmeter_3
 
 
 from six.moves.queue import Queue
@@ -66,6 +68,7 @@ from random import random
 
 characterized_pump = {
     "pump_type": "",
+    "motor_type": "",
     "service_order" : "", 
     "date" : "", 
     "delegate" : "", 
@@ -130,7 +133,22 @@ if use_wattmeter_2 and not testing_interface:
     master2.set_timeout(2.0)
     master2.set_verbose(True)
 
-measuring_presure = False
+if use_wattmeter_3 and not testing_interface:
+    wattmeter_3 = serial.Serial(
+                        port='',#!'/dev/ttyAMA5',
+                        baudrate=9600,
+                        bytesize=8,
+                        parity='N',
+                        stopbits=1,
+                        xonxoff=0
+                        )
+
+    master3 = modbus_rtu.RtuMaster(wattmeter_3)
+    master3.set_timeout(2.0)
+    master3.set_verbose(True)
+
+
+measuring_pressure = False
 
 
 pressure_in_global = 0
@@ -203,6 +221,8 @@ class FirstWindow(Window):
         alert_message = ""
         alert_boolean = False
 
+        global characterized_pump
+
         if (self.lE_1_service_order.text() == '' or self.lE_2_delegate.text() == '' or self.lE_3_date.text() == '' or self.lE_4_pump_model.text() == '' 
             or self.lE_5_motor_speed.text() == '' or self.lE_6_pump_power.text() == '' or self.lE_7_parking_slot.text() == ''):
             alert_message = "Debe diligenciar todos los campos \n"
@@ -216,7 +236,17 @@ class FirstWindow(Window):
             characterized_pump["pump_type"] = "triplex" 
 
         else:
-            alert_message += "Debe seleccionar un tipo de bomba"
+            alert_message += "Debe seleccionar un tipo de bomba \n"
+            alert_boolean = True
+
+        if self.monofasica.isChecked():
+            characterized_pump["motor_type"] = "single-phase"
+            
+        elif self.trifasica.isChecked():
+            characterized_pump["motor_type"] = "three-phase" 
+
+        else:
+            alert_message += "Debe seleccionar un tipo de motor"
             alert_boolean = True
 
         print(alert_boolean)
@@ -511,7 +541,7 @@ class SecondWindow(Window):
             
             return
 
-        if not measuring_presure:
+        if not measuring_pressure:
             pressure_in, pressure_out = measurePressure() # self.measurePressure()
             self.lcdNumber_pin.display(pressure_in * 14.503773773)
             self.lcdNumber_pout.display(pressure_out * 14.503773773)
@@ -572,6 +602,8 @@ class SecondWindow(Window):
 
         
         g = 9.798
+
+        global characterized_pump
 
         if characterized_pump["pump_type"] == "roto":            
             z1 = 0.97
@@ -798,7 +830,7 @@ class SecondWindow(Window):
 
 def measurePressure():
 
-    # measuring_presure = True
+    # measuring_pressure = True
 
     factor_1 = 0 
     factor_2 = 0
@@ -845,30 +877,50 @@ def measurePressure():
         pressure_in, pressure_out = measurePressure()
 
         
-    # measuring_presure = False
+    # measuring_pressure = False
 
     return pressure_in, pressure_out
 
     
 def measurePower():
-    if use_wattmeter_1:
-        data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-        power = (data[3] + (data[4] << 16)) / 10.0 # [W]
-        current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
-    if use_wattmeter_2:
-        data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-        power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
-        current2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
+    if characterized_pump['motor_type'] == 'single-phase':
 
-    if use_wattmeter_1:
-        active_power = power + power_2
-    elif use_wattmeter_2:
-        active_power = power_2
+        if use_wattmeter_2:
+            data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
+            current_2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
+
+        if use_wattmeter_2:
+            active_power = power_2
+            current = current_2
+        else:
+            active_power = 0
+            current = 0
+
+
+    elif characterized_pump['motor_type'] == 'three-phase':
+
+        if use_wattmeter_1:
+            data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            power = (data[3] + (data[4] << 16)) / 10.0 # [W]
+            current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
+        if use_wattmeter_3:
+            data_3 = master3.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            power_3 = (data_3[3] + (data_3[4] << 16)) / 10.0 # [W]
+            current_3 = (data_3[1] + (data_3[2] << 16)) / 1000.0 # [A]
+
+        if use_wattmeter_1 and use_wattmeter_3:
+            active_power = power + power_3
+            current = current_3
+        else:
+            active_power = 0
+            current = 0
+    
     else:
         active_power = 0
-        current2 = 0
+        current = 0
 
-    return active_power, current2
+    return active_power, current
 
 def measureTemperature():
 
@@ -944,7 +996,6 @@ class checkStabilityOnThread(QObject):
                 data_counter = 0
                 start_count_stabilization_time = time.time()
                 
-                print("Entró")
 
                 if time.time() - start_checking_process_time >= 60:
                     self.flag.emit(False)
@@ -973,7 +1024,7 @@ class measureOnThread(QObject):
         pressure_out = 0
         electrical_power = 0
         temperature = 0
-        measuring_presure = True
+        measuring_pressure = True
         while time.time() - start_time < 5 :
 
             if testing_interface:
@@ -999,7 +1050,7 @@ class measureOnThread(QObject):
             
 
             
-        measuring_presure = False
+        measuring_pressure = False
         pressure_in /= measurements_counter
         pressure_out /= measurements_counter
         electrical_power /= measurements_counter
@@ -1047,17 +1098,20 @@ class ThirdWindow(Window):
             "final_flow" : 0,
             "final_head" : 0, 
             "final_efficiency" : 0,
-            "total_measurements": 8
+            "total_measurements": 8,
+            "pump_type": "",
+            "motor_type": ""
         }
 
+        
 
-        characterized_pump["flow"] =        [80.5, 71.9, 65.0, 55.8, 50.0, 45.3, 34.8, 35.2]
-        characterized_pump["pressure"] =    [2.12, 31.47, 39.0, 45.5, 49.3, 54.3, 56.4, 56.2]
-        characterized_pump["velocity"] =    [0.045, 0.036, 0.029, 0.022, 0.017, 0.014, 0.008, 0.009]
-        characterized_pump["elevation"] =   [0.655, 0.655, 0.655, 0.655, 0.655, 0.655, 0.655, 0.655]
-        characterized_pump["pump_total"] =  [4.5, 24.7, 29.6, 33.7, 36.0, 39.2, 40.6, 40.3]
-        characterized_pump["pump_power"] =  [672.46, 693.78, 677.58, 651.1, 627.8, 592.3, 575.7, 574.2]
-        characterized_pump["pump_efficiency"] =  [8.9, 41.8, 46.3, 47.2, 46.9, 49.0, 40.0, 40.4]
+        characterized_pump["flow"] =            [80.5, 71.9, 65.0, 55.8, 50.0, 45.3, 34.8, 35.2]
+        characterized_pump["pressure"] =        [2.12, 31.47, 39.0, 45.5, 49.3, 54.3, 56.4, 56.2]
+        characterized_pump["velocity"] =        [0.045, 0.036, 0.029, 0.022, 0.017, 0.014, 0.008, 0.009]
+        characterized_pump["elevation"] =       [0.655, 0.655, 0.655, 0.655, 0.655, 0.655, 0.655, 0.655]
+        characterized_pump["pump_total"] =      [4.5, 24.7, 29.6, 33.7, 36.0, 39.2, 40.6, 40.3]
+        characterized_pump["pump_power"] =      [672.46, 693.78, 677.58, 651.1, 627.8, 592.3, 575.7, 574.2]
+        characterized_pump["pump_efficiency"] = [8.9, 41.8, 46.3, 47.2, 46.9, 49.0, 40.0, 40.4]
 
         self.label_7.setText(characterized_pump["service_order"])
         self.label_12.setText(characterized_pump["delegate"])
@@ -1122,7 +1176,7 @@ class FourthWindow(Window):
 
     
     def goToNextTask(self):
-
+        global characterized_pump
         self.count_button_pushed += 1
         
         if self.count_button_pushed >= 2:
@@ -1190,7 +1244,6 @@ class FourthWindow(Window):
         generate_html(characterized_pump)
         self.progressBar.setValue(70)
 
-        json_object = json.dumps(dictionary, indent=4)
  
         # resd to sample.json
         with open("data/json/test_count.json", "r") as openfile:
