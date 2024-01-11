@@ -1344,7 +1344,7 @@ def closeApp(widget, button_pin):
 
 
 
-    # widget.close()
+    widget.close()
     # os.system("shutdown now") #shut down the Pi -h is or -r will reset
 
 def turnOnLed(led_pin):
