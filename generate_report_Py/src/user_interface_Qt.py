@@ -966,7 +966,8 @@ class measureOnThread(QObject):
             pressure_in += p_in # pressure_in = pressure_in + p_in 
             pressure_out += p_out
 
-            electrical_power, _ += measurePower()
+            power, _ = measurePower()
+            electrical_power += power
             temperature += measureTemperature()
             measurements_counter += 1
 
