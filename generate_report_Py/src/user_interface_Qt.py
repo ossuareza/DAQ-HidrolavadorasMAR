@@ -461,7 +461,7 @@ class SecondWindow(Window):
             target_flow = round(self.different_apertures[self.actual_step // 2] , 2)
 
             # Show alerts to guide the search process of the target flow
-            self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } L/min")
+            self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } \u00B1 {target_flow * 0.2} L/min")
             self.lcdNumber_fo.display(target_flow)
             self.alerts.setStyleSheet(f''' color: green ''')
             self.pushButton.setEnabled(False)
@@ -1038,7 +1038,7 @@ class ThirdWindow(Window):
         characterized_pump["pump_power"] =      [672.46, 693.78, 677.58, 651.1, 627.8, 592.3, 575.7, 574.2]
         characterized_pump["pump_efficiency"] = [8.9, 41.8, 46.3, 47.2, 46.9, 49.0, 40.0, 40.4]
  """
-        self.label_7.setText(characterized_pump["service_order"])
+        self.label_7.setText (characterized_pump["service_order"])
         self.label_12.setText(characterized_pump["delegate"])
         self.label_13.setText(characterized_pump["date"])
         self.label_14.setText(characterized_pump["model"])
@@ -1057,9 +1057,9 @@ class ThirdWindow(Window):
         
         self.tableWidget.setHorizontalHeaderLabels(['Variable'] + [str(i) for i in range(1, characterized_pump['total_measurements'] + 1)])
 
-        self.addTableRow(self.tableWidget, ["Flujo (L/m)"] + characterized_pump['flow'])
-        self.addTableRow(self.tableWidget, ["Presión (psi)"] + characterized_pump['pressure'])
-        self.addTableRow(self.tableWidget, ["Potencia (W)"] + characterized_pump['pump_power'])
+        self.addTableRow(self.tableWidget, ["Flujo (L/m)"] + [round(element) for element in characterized_pump['flow']])
+        self.addTableRow(self.tableWidget, ["Presión (psi)"] + [round(element) for element in characterized_pump['pressure']])
+        self.addTableRow(self.tableWidget, ["Potencia (W)"] + [round(element) for element in characterized_pump['pump_power']])
         # self.addTableRow(self.tableWidget, row_4)
     
         hheader = self.tableWidget.horizontalHeader()

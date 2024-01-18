@@ -56,16 +56,16 @@ def generate_html(pump):
         <colgroup span="8" ></colgroup>
         <tr>
             <td colspan=2 height="50"><img src="../../data/imgs/logo.png" alt="Hidrolavadoras MAR Image" width="200" height="34"></td>
-            <td class="td_top" align="center">Velocidad n (rpm)<br><br>{round(pump["motor_speed"], 2)}</td>
-            <td class="td_top" align="center">Potencia P(W)<br><br>{round(pump["power"], 2)}</td>
-            <td class="td_top" colspan=2>Número del parqueadero:<br><br><br>{round(pump["parking_slot"], 2)}</td>
-            <td class="td_top" colspan=2>Número orden del servicio:<br><br><br>{round(pump["service_order"], 2)}</td>
+            <td class="td_top" align="center">Velocidad n (rpm)<br><br>{pump["motor_speed"]}</td>
+            <td class="td_top" align="center">Potencia P(W)<br><br>{pump["power"]}</td>
+            <td class="td_top" colspan=2>Número del parqueadero:<br><br><br>{pump["parking_slot"]}</td>
+            <td class="td_top" colspan=2>Número orden del servicio:<br><br><br>{pump["service_order"]}</td>
             </tr>
         <tr class="td_top">
-            <td height="50" colspan=2 align="left">Fecha de la prueba:<br><br>{round(pump["date"], 2)}</td>
-            <td colspan=2 align="left">Encargado:<br><br>{round(pump["delegate"], 2)}</td>
-            <td colspan=2 align="left">Modelo de la bomba:<br>{round(pump["model"], 2)}</td>
-            <td colspan=2 align="left">Test número:<br><br>{round(pump["test_number"], 2)}</td>
+            <td height="50" colspan=2 align="left">Fecha de la prueba:<br><br>{pump["date"]}</td>
+            <td colspan=2 align="left">Encargado:<br><br>{pump["delegate"]}</td>
+            <td colspan=2 align="left">Modelo de la bomba:<br>{pump["model"]}</td>
+            <td colspan=2 align="left">Test número:<br><br>{pump["test_number"]}</td>
             </tr>
         <tr>
             <td rowspan=2 align="center">Medición No.</td>
