@@ -1004,7 +1004,7 @@ class ThirdWindow(Window):
     def goToNextTask(self):
 
 
-        characterized_pump = {
+        """ characterized_pump = {
             "motor_speed" : "3450", 
             "power" : "750", 
             "parking_slot" : "1",
@@ -1037,7 +1037,7 @@ class ThirdWindow(Window):
         characterized_pump["pump_total"] =      [4.5, 24.7, 29.6, 33.7, 36.0, 39.2, 40.6, 40.3]
         characterized_pump["pump_power"] =      [672.46, 693.78, 677.58, 651.1, 627.8, 592.3, 575.7, 574.2]
         characterized_pump["pump_efficiency"] = [8.9, 41.8, 46.3, 47.2, 46.9, 49.0, 40.0, 40.4]
-
+ """
         self.label_7.setText(characterized_pump["service_order"])
         self.label_12.setText(characterized_pump["delegate"])
         self.label_13.setText(characterized_pump["date"])
@@ -1137,12 +1137,12 @@ class FourthWindow(Window):
 
         
         flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png")
-        flow_curve, power_curve = flow_vs_pump_power.plotter()
+        flow_vs_pump_power.plotter()
         self.progressBar.setValue(30)
 
 
         flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png")
-        _, head_curve = flow_vs_pressure.plotter()
+        flow_vs_pressure.plotter()
         self.progressBar.setValue(40)
         
         flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png")
