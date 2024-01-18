@@ -461,7 +461,7 @@ class SecondWindow(Window):
             target_flow = round(self.different_apertures[self.actual_step // 2] , 2)
 
             # Show alerts to guide the search process of the target flow
-            self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } \u00B1 {target_flow * 0.2} L/min")
+            self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } \u00B1 {round(target_flow * 0.2, 2)} L/min")
             self.lcdNumber_fo.display(target_flow)
             self.alerts.setStyleSheet(f''' color: green ''')
             self.pushButton.setEnabled(False)
