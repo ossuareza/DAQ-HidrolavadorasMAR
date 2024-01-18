@@ -1171,7 +1171,7 @@ class FourthWindow(Window):
 
  
         # resd to sample.json
-        with open("data/json/test_count.json", "r") as openfile:
+        with open("data/json/test_number.json", "r") as openfile:
             json_object = json.load(openfile)
 
         # Generate the final report in pdf
