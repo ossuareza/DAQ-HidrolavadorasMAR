@@ -869,6 +869,7 @@ def read_max6675(cs_pin):
     # Read raw data from MAX6675
     raw_data = spi.xfer2([0x00, 0x00])
     
+    spi.close()
     # Convert raw data to temperature in Celsius
     temperature = ((raw_data[0] << 8) | raw_data[1]) >> 3
     temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
