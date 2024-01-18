@@ -1121,9 +1121,9 @@ class FourthWindow(Window):
             widget.currentWidget().measurements.setValue(5)
 
             widget.currentWidget().roto.setChecked(False)
-            widget.currentWidget().triplex.setChecked(False)
+            # widget.currentWidget().triplex.setChecked(False)
             widget.currentWidget().single_phase.setChecked(False)
-            widget.currentWidget().three_phase.setChecked(False)
+            # widget.currentWidget().three_phase.setChecked(False)
             
             return
 
@@ -1317,6 +1317,11 @@ if __name__ == '__main__':
     if not testing_interface:
         GPIO.setmode(GPIO.BCM)
         
+
+        synthetic_gnd_pin = 18
+        GPIO.setup( synthetic_gnd_pin , GPIO.OUT)
+        GPIO.output( synthetic_gnd_pin, GPIO.LOW)
+
         red_button_pin = 22 # Button to close the app
         GPIO.setup(red_button_pin, GPIO.IN)
         print(str(GPIO.input(red_button_pin)))
