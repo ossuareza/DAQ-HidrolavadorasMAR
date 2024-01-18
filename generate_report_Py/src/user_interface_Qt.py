@@ -242,10 +242,10 @@ class FirstWindow(Window):
             alert_message += "Debe seleccionar un tipo de bomba \n"
             alert_boolean = True
 
-        if self.monofasica.isChecked():
+        if self.single_phase.isChecked():
             characterized_pump["motor_type"] = "single-phase"
             
-        elif self.trifasica.isChecked():
+        elif self.three_phase.isChecked():
             characterized_pump["motor_type"] = "three-phase" 
 
         else:
@@ -260,10 +260,12 @@ class FirstWindow(Window):
         
         else:
             widget.setCurrentIndex(1) # Go to the next window
-
-        if self.reset_enabled: # Reset variables if asked
-                widget.currentWidget().resetVariables()
-                self.reset_enabled = False
+            print(f"Booleano de reseteo en Primera Ventana: {self.reset_enabled}")
+            
+            if self.reset_enabled: # Reset variables if asked
+                    print("Reseteando Variables")
+                    widget.currentWidget().resetVariables()
+                    self.reset_enabled = False
 
 
 
@@ -327,7 +329,6 @@ class SecondWindow(Window):
         self.are_variables_reset = False
 
     def resetVariables(self):
-
         global characterized_pump 
             
         characterized_pump["flow"] =  []
@@ -368,8 +369,12 @@ class SecondWindow(Window):
         self.new_bounce_time = None
 
         self.actual_step = -1
+
+        self.lcd_measurement.display(0)
+
         self.progressBar.setMaximum(100)
         self.progressBar.setValue(0)
+        self.progressBar.setFormat("%.02f %%" % 0)
 
         self.different_apertures = [0, 0, 0, 0, 0]
 
@@ -391,6 +396,9 @@ class SecondWindow(Window):
         if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2 and self.actual_step != 1:
             if (self.flow >= self.different_apertures[self.actual_step // 2] * 0.8 and self.flow <= self.different_apertures[self.actual_step // 2] * 1.2):# and (self.actual_step % 2 == 0 or self.actual_step == 1):
                 self.pushButton.setEnabled(True)
+        
+        if testing_interface:
+            self.pushButton.setEnabled(True)
 
         # self.contador_random += 1
 
@@ -553,7 +561,7 @@ class SecondWindow(Window):
         power, current = measurePower()
         self.lcdNumber_pw.display(power)
         self.lcdNumber_c.display(current)
-        self.lcdNumber_t.display(measureTemperature())
+        self.lcdNumber_t.display(  measureTemperature() if not testing_interface else 22)
 
         
     def storeMeasurement(self, measurements): 
@@ -932,7 +940,10 @@ class checkStabilityOnThread(QObject):
                 self.flag.emit(True)
                 self.finished.emit()
                 break
-    
+        
+        if testing_interface:
+            self.flag.emit(True)
+            self.finished.emit()
     
 
 class measureOnThread(QObject):
@@ -977,10 +988,18 @@ class measureOnThread(QObject):
 
             
         measuring_pressure = False
-        pressure_in /= measurements_counter
-        pressure_out /= measurements_counter
-        electrical_power /= measurements_counter
-        temperature /= measurements_counter
+
+        if testing_interface:
+            pressure_in = 0
+            pressure_out = 0
+            electrical_power = 0
+            temperature = 22
+
+        else:
+            pressure_in /= measurements_counter
+            pressure_out /= measurements_counter
+            electrical_power /= measurements_counter
+            temperature /= measurements_counter
         self.measurements_ready.emit([pressure_in, pressure_out, electrical_power, temperature])
         self.finished.emit()
 
@@ -1004,41 +1023,6 @@ class ThirdWindow(Window):
     
     def goToNextTask(self):
 
-
-        """ characterized_pump = {
-            "motor_speed" : "3450", 
-            "power" : "750", 
-            "parking_slot" : "1",
-            "test_number" : 5,
-            "service_order" : "23-0814", 
-            "date" : "23/11/2023", 
-            "delegate" : "Felipe Rodriguez", 
-            "model" : "CPM620",
-            "flow" : [], 
-            "pressure" : [], 
-            "velocity" : [], 
-            "elevation" : [], 
-            "pump_total" : [], 
-            "pump_power" : [], 
-            "pump_efficiency" : [],
-            "final_flow" : 0,
-            "final_head" : 0, 
-            "final_efficiency" : 0,
-            "total_measurements": 8,
-            "pump_type": "",
-            "motor_type": ""
-        }
-
-        
-
-        characterized_pump["flow"] =            [80.5, 71.9, 65.0, 55.8, 50.0, 45.3, 34.8, 35.2]
-        characterized_pump["pressure"] =        [2.12, 31.47, 39.0, 45.5, 49.3, 54.3, 56.4, 56.2]
-        characterized_pump["velocity"] =        [0.045, 0.036, 0.029, 0.022, 0.017, 0.014, 0.008, 0.009]
-        characterized_pump["elevation"] =       [0.655, 0.655, 0.655, 0.655, 0.655, 0.655, 0.655, 0.655]
-        characterized_pump["pump_total"] =      [4.5, 24.7, 29.6, 33.7, 36.0, 39.2, 40.6, 40.3]
-        characterized_pump["pump_power"] =      [672.46, 693.78, 677.58, 651.1, 627.8, 592.3, 575.7, 574.2]
-        characterized_pump["pump_efficiency"] = [8.9, 41.8, 46.3, 47.2, 46.9, 49.0, 40.0, 40.4]
- """
         self.label_7.setText (characterized_pump["service_order"])
         self.label_12.setText(characterized_pump["delegate"])
         self.label_13.setText(characterized_pump["date"])
@@ -1079,8 +1063,19 @@ class ThirdWindow(Window):
             
         widget.currentWidget().reset_enabled = True
 
+        print(f"Booleano de reseteo en Tercera Ventana: {widget.currentWidget().reset_enabled}")
+
         widget.currentWidget().alerts.setText("Seleccione un tipo de bomba y diligencie las casillas")
         widget.currentWidget().alerts.setStyleSheet(f''' color: green ''')
+
+        widget.currentWidget().lE_1_service_order.setText("")
+        widget.currentWidget().lE_2_delegate.setText("")
+        widget.currentWidget().lE_3_date.setText("")
+        widget.currentWidget().lE_4_pump_model.setText("")
+        widget.currentWidget().lE_5_motor_speed.setText("")
+        widget.currentWidget().lE_6_pump_power.setText("")
+        widget.currentWidget().lE_7_parking_slot.setText("")
+        widget.currentWidget().measurements.setValue(5)
             
 
         
@@ -1111,8 +1106,24 @@ class FourthWindow(Window):
             widget.setCurrentIndex(0)
             
             widget.currentWidget().reset_enabled = True
+            print(f"Booleano de reseteo en Cuarta Ventana: {widget.currentWidget().reset_enabled}")
+
             widget.currentWidget().alerts.setText("Seleccione un tipo de bomba y diligencie las casillas")
             widget.currentWidget().alerts.setStyleSheet(f''' color: green ''')
+
+            widget.currentWidget().lE_1_service_order.setText("")
+            widget.currentWidget().lE_2_delegate.setText("")
+            widget.currentWidget().lE_3_date.setText("")
+            widget.currentWidget().lE_4_pump_model.setText("")
+            widget.currentWidget().lE_5_motor_speed.setText("")
+            widget.currentWidget().lE_6_pump_power.setText("")
+            widget.currentWidget().lE_7_parking_slot.setText("")
+            widget.currentWidget().measurements.setValue(5)
+
+            widget.currentWidget().roto.setChecked(False)
+            widget.currentWidget().triplex.setChecked(False)
+            widget.currentWidget().single_phase.setChecked(False)
+            widget.currentWidget().three_phase.setChecked(False)
             
             return
 
@@ -1127,27 +1138,31 @@ class FourthWindow(Window):
         # characterized_pump["pump_efficiency"] =  [0,10,20,20,25,30,40,70,60,50]
         
         # Finding most efficient point
-        index = characterized_pump["pump_efficiency"].index(max(characterized_pump["pump_efficiency"])) 
-        characterized_pump["final_flow"] =  characterized_pump["flow"][index]
-        characterized_pump["final_head"] =  characterized_pump["pressure"][index]
-        characterized_pump["final_efficiency"] =  characterized_pump["pump_efficiency"][index]
+
+        if not testing_interface:
+            index = characterized_pump["pump_efficiency"].index(max(characterized_pump["pump_efficiency"])) 
+            characterized_pump["final_flow"] =  characterized_pump["flow"][index]
+            characterized_pump["final_head"] =  characterized_pump["pressure"][index]
+            characterized_pump["final_efficiency"] =  characterized_pump["pump_efficiency"][index]
 
         self.progressBar.setValue(20)
 
         # Generate the graphs of power, pressure, efficiency vs flow
 
-        
-        flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png")
-        flow_vs_pump_power.plotter()
+        if not testing_interface:
+            flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png")
+            flow_vs_pump_power.plotter()
+
         self.progressBar.setValue(30)
 
-
-        flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png")
-        flow_vs_pressure.plotter()
+        if not testing_interface:
+            flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png")
+            flow_vs_pressure.plotter()
         self.progressBar.setValue(40)
         
-        flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png")
-        flow_vs_pump_efficiency.plotter()
+        if not testing_interface:
+            flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png")
+            flow_vs_pump_efficiency.plotter()
 
 
         # f = open('example.txt', 'w')
@@ -1167,12 +1182,13 @@ class FourthWindow(Window):
         self.progressBar.setValue(50)
 
         # Generate a html file that is going to be used as a base for the pdf generation
-        generate_html(characterized_pump)
+        if not testing_interface:
+            generate_html(characterized_pump)
         self.progressBar.setValue(70)
 
  
         # resd to sample.json
-        with open("data/json/test_number.json", "r") as openfile:
+        with open("data/json/test_count.json", "r") as openfile:
             json_object = json.load(openfile)
 
         # Generate the final report in pdf
@@ -1292,22 +1308,6 @@ if __name__ == '__main__':
 
     measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
     widget.addWidget(measurements_window)
-
-    """ # Flowmeter pins definition     ******************************************************************************
-
-    if characterized_pump["pump_type"] == "roto":
-        flowmeter_pin = 4 #! Definir bien los pines
-    elif characterized_pump["pump_type"] == "triplex":
-        flowmeter_pin = 17
-    else:
-        flowmeter_pin = 4
-    #measurements_window.start_timer.connect(measurements_window.countFlowTime)
-    
-    GPIO.setup(flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    
-    # GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000)
-    # GPIO.add_event_detect(flowmeter_pin, GPIO.LOW, callback = lambda x: detectPulses(measurements_window, flowmeter_pin), bouncetime = 1000)
-    GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = measurements_window.countingFlowPulses, bouncetime = 1000) """
 
 
     

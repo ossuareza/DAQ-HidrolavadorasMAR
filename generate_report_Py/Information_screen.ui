@@ -346,7 +346,7 @@
          </spacer>
         </item>
         <item>
-         <widget class="QRadioButton" name="monofasica">
+         <widget class="QRadioButton" name="single_phase">
           <property name="text">
            <string>Monofásica</string>
           </property>
@@ -369,7 +369,7 @@
          </spacer>
         </item>
         <item>
-         <widget class="QRadioButton" name="trifasica">
+         <widget class="QRadioButton" name="three_phase">
           <property name="text">
            <string>Trifásica</string>
           </property>
