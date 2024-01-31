@@ -15,6 +15,8 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--testing_interface', action="store_true", help="Test the interface without sensors connections")
 
+parser.add_argument('--testing_buttons', action="store_true", help="Test the physical buttons without sensors connections")
+
 parser.add_argument('--not_use_wattmeter_1', action="store_true", help="Run the software with the wattmeter_1")
 parser.add_argument('--not_use_wattmeter_2', action="store_true", help="Run the software with the wattmeter_2")
 parser.add_argument('--not_use_wattmeter_3', action="store_true", help="Run the software with the wattmeter_3")
@@ -23,6 +25,7 @@ args = parser.parse_args()
 
 
 testing_interface = args.testing_interface
+testing_buttons = args.testing_buttons
 use_wattmeter_1 = not args.not_use_wattmeter_1
 use_wattmeter_2 = not args.not_use_wattmeter_2
 use_wattmeter_3 = not args.not_use_wattmeter_3
@@ -67,7 +70,19 @@ import pandas as pd
 
 from random import random
 
+
+
+
+if testing_buttons:
+    testing_interface = True
+
+
+
+
+
+
 # Define the data structure used to pass the information across the whole architecture
+
 
 characterized_pump = {
     "pump_type": "",
@@ -308,7 +323,7 @@ class SecondWindow(Window):
         self.time_between_pulses = []
         self.first_pulse_received = False
         self.last_pulse_received_time = 0
-        self.new_bounce_time = None
+        self.new_bounce_time = 1
 
         self.actual_step = -1
         self.progressBar.setMaximum(100)
@@ -327,6 +342,13 @@ class SecondWindow(Window):
 
         self.max_flow_was_defined = False
         self.are_variables_reset = False
+
+        self.searching_target = False
+
+
+        # if not testing_interface:
+        #     GPIO.setup(self.flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        #     GPIO.add_event_detect(self.flowmeter_pin, GPIO.RISING, callback = self.detectPulses)
 
     def resetVariables(self):
         global characterized_pump 
@@ -366,7 +388,7 @@ class SecondWindow(Window):
         self.time_between_pulses = []
         self.first_pulse_received = False
         self.last_pulse_received_time = 0
-        self.new_bounce_time = None
+        self.new_bounce_time = 1
 
         self.actual_step = -1
 
@@ -387,14 +409,20 @@ class SecondWindow(Window):
 
         self.are_variables_reset = True
 
-
+        self.searching_target = False
 
 
         
     def defineButtonState(self):
         # Hold pushButton disabled while a requirement is not achieved
         if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2 and self.actual_step != 1:
-            if (self.flow >= self.different_apertures[self.actual_step // 2] * 0.8 and self.flow <= self.different_apertures[self.actual_step // 2] * 1.2):# and (self.actual_step % 2 == 0 or self.actual_step == 1):
+            if self.searching_target and self.actual_step % 2 == 1:
+                if (self.flow >= self.different_apertures[self.actual_step // 2] * 0.9 and self.flow <= self.different_apertures[self.actual_step // 2] * 1.1):
+                    # and (self.actual_step % 2 == 0 or self.actual_step == 1):
+                    self.pushButton.setEnabled(True)
+                else:
+                    self.pushButton.setEnabled(False)
+            elif self.actual_step % 2 != 1:
                 self.pushButton.setEnabled(True)
         
         if testing_interface:
@@ -424,6 +452,8 @@ class SecondWindow(Window):
 
         print(f"Medición actual: {self.actual_step}")
         
+        self.searching_target = False
+
         if self.actual_step == -1:
             
             if self.are_variables_reset:
@@ -442,7 +472,7 @@ class SecondWindow(Window):
             
             if not testing_interface:
                 GPIO.setup(self.flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-                GPIO.add_event_detect(self.flowmeter_pin, GPIO.RISING, callback = self.detectPulses)
+                GPIO.add_event_detect(self.flowmeter_pin, GPIO.RISING, callback = self.detectPulses)    
 
             self.alerts.setText("Abra la válvula completamente")
             self.alerts.setStyleSheet(f''' color: green ''')
@@ -460,7 +490,7 @@ class SecondWindow(Window):
             self.actual_step += 1
 
         elif self.actual_step % 2 == 0:
-            # Show in screen the target flow
+            # Show in screen the target flow            
             self.label_fo.show()
             self.lcdNumber_fo.show()
             self.label_fo_units.show()
@@ -469,16 +499,16 @@ class SecondWindow(Window):
             target_flow = round(self.different_apertures[self.actual_step // 2] , 2)
 
             # Show alerts to guide the search process of the target flow
-            self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } \u00B1 {round(target_flow * 0.2, 2)} L/min")
+            self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } \u00B1 {round(target_flow * 0.1, 2)} L/min")
             self.lcdNumber_fo.display(target_flow)
             self.alerts.setStyleSheet(f''' color: green ''')
-            self.pushButton.setEnabled(False)
             
+            self.searching_target = True
             self.actual_step += 1
 
 
         elif self.actual_step % 2 == 1:
-
+            
             # Hide the target flow
             self.label_fo.hide()
             self.lcdNumber_fo.hide()
@@ -503,9 +533,16 @@ class SecondWindow(Window):
     def enableButtonAfterFMeasurement(self):
         self.pushButton.setEnabled(True)
 
+        if characterized_pump["pump_type"] == "triplex":
+
+            min_aper_percentage = 0.7
+
+        else:
+            min_aper_percentage = 0.45
+
         # Define the apertures for each measurement point
         self.max_flow = self.flow
-        self.different_apertures = self.max_flow * np.linspace(1, 0.45, characterized_pump["total_measurements"])
+        self.different_apertures = self.max_flow * np.linspace(1, min_aper_percentage, characterized_pump["total_measurements"])
 
         self.alerts.setText("Caudal máximo medido. Continue con el proceso")
         self.alerts.setStyleSheet(f''' color: green ''')
@@ -1228,7 +1265,7 @@ def next(widget, button_pin):
             # Flank detected
             second_flank_detected_time = time.time()
         
-        if second_flank_detected_time - first_flank_detected_time >= 1:
+        if second_flank_detected_time - first_flank_detected_time >= 0.5:
             # Signal has stayed in the new state for at least 1 second
             print("Green button pressed.")
             widget.currentWidget().goToNextTask()
@@ -1299,22 +1336,11 @@ if __name__ == '__main__':
     screen_width = screen.availableGeometry().width()
     screen_height = screen.availableGeometry().height()
 
-    
-
-    widget = QtWidgets.QStackedWidget()
-    information_window = FirstWindow("Information_screen.ui", screen_width)
-    # information_window.pushButton.clicked.connect(getInformation)
-    widget.addWidget(information_window)
-
-    measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
-    widget.addWidget(measurements_window)
-
-
-    
+       
     
 
     # Button pin definitions    ******************************************************************************
-    if not testing_interface:
+    if not testing_interface or testing_buttons:
         GPIO.setmode(GPIO.BCM)
         
 
@@ -1339,8 +1365,17 @@ if __name__ == '__main__':
         red_led_pin = 0
         GPIO.setup(red_led_pin,GPIO.OUT)
 
+    widget = QtWidgets.QStackedWidget()
+    information_window = FirstWindow("Information_screen.ui", screen_width)
+    # information_window.pushButton.clicked.connect(getInformation)
+    widget.addWidget(information_window)
+
+    measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
+    widget.addWidget(measurements_window)
+
     resume_window = ThirdWindow('Resume_screen.ui', screen_width)
     widget.addWidget(resume_window)
+
     report_generation_window = FourthWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
     # widget.setFixedWidth(screen_width)
