@@ -77,10 +77,6 @@ if testing_buttons:
     testing_interface = True
 
 
-
-
-
-
 # Define the data structure used to pass the information across the whole architecture
 
 
@@ -112,12 +108,8 @@ characterized_pump = {
 
 
 
-
 water_properties_path = os.path.join("data", "water_properties", "Propiedades_agua.xlsx")  # Load table for water densities at different temperatures
 water_properties_df = pd.read_excel(water_properties_path) # Load table for water densities at different temperatures
-
-
-
 
 
 
@@ -191,7 +183,7 @@ class Window(QtWidgets.QMainWindow):
 
 
         
-        self.green_button_pin = 27
+        # self.green_button_pin = 27
         
         
     def defineFontSizes(self, main_object): # Adaptative size for text
@@ -332,7 +324,7 @@ class SecondWindow(Window):
         self.different_apertures = [0, 0, 0, 0, 0]
 
         self.timer = QTimer(self)
-        self.timer_flow_measurement = QTimer(self)
+        # self.timer_flow_measurement = QTimer(self)
 
         self.flowmeter_pin = None
 
@@ -401,7 +393,7 @@ class SecondWindow(Window):
         self.different_apertures = [0, 0, 0, 0, 0]
 
         self.timer = QTimer(self)
-        self.timer_flow_measurement = QTimer(self)
+        # self.timer_flow_measurement = QTimer(self)
 
         self.timer.timeout.connect(self.defineButtonState)
         self.timer.timeout.connect(self.showSensorsData)
