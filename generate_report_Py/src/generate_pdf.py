@@ -1,7 +1,7 @@
 import pdfkit
 import os
 
-def generate_pdf(test_number):
+def generate_pdf(test_number, service_order):
 
     # Configuration options for WkHTMLtoPDF
     options = {
@@ -17,7 +17,7 @@ def generate_pdf(test_number):
     path_to_input_html = os.path.join("data", "html", 'report.html') 
 
     # Output PDF file
-    file_name = f"report_{test_number}.pdf"
+    file_name = f"report_{test_number}_{service_order}.pdf"
 
     path_to_output_file = os.path.join("data", "report", file_name)
 

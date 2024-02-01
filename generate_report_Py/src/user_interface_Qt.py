@@ -276,7 +276,7 @@ class FirstWindow(Window):
 
 
 
-
+        
         characterized_pump["service_order"] = self.lE_1_service_order.text()
         characterized_pump["delegate"] = self.lE_2_delegate.text()
         characterized_pump["date"] = self.lE_3_date.text()
@@ -292,7 +292,7 @@ class SecondWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
 
-        self.alerts.setText("Preparando el sistema")
+        self.alerts.setText("Preparando el sistema, continue con el proceso")
         self.alerts.setStyleSheet(f''' color: green ''')
         
 
@@ -1052,7 +1052,8 @@ class ThirdWindow(Window):
                 col += 1
     
     def goToNextTask(self):
-
+        
+        global characterized_pump
         self.label_7.setText (characterized_pump["service_order"])
         self.label_12.setText(characterized_pump["delegate"])
         self.label_13.setText(characterized_pump["date"])
@@ -1086,6 +1087,20 @@ class ThirdWindow(Window):
             # GPIO.remove_event_detect(self.green_button_pin)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(0).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(3)
+
+
+            keys = ["service_order", "delegate", "date", "model", "motor_speed", "power", "parking_slot"]
+            line_edit = [self.lineEdit_1, self.lineEdit_2, self.lineEdit_3, self.lineEdit_4, self.lineEdit_5, self.lineEdit_6, self.lineEdit_7 ]
+
+            for i, key in zip(range(7), keys):
+                if line_edit[i].text() != "":
+                    characterized_pump[key] = line_edit[i].text()
+
+
+            if self.lineEdit_1.text() != "": 
+                characterized_pump["service_order"] = self.lineEdit_1.text()
+
+            self.count_button_pushed = 0
             
     def resetMeasurementProcess(self):
         
@@ -1212,8 +1227,8 @@ class FourthWindow(Window):
         self.progressBar.setValue(50)
 
         # Generate a html file that is going to be used as a base for the pdf generation
-        if not testing_interface:
-            generate_html(characterized_pump)
+        # if not testing_interface:
+        generate_html(characterized_pump)
         self.progressBar.setValue(70)
 
  
@@ -1225,7 +1240,7 @@ class FourthWindow(Window):
             
         characterized_pump['test_number'] = json_object["test_number"] + 1
         
-        generate_pdf(characterized_pump['test_number'])
+        generate_pdf(characterized_pump['test_number'], characterized_pump["service_order"])
 
         
         json_object = json.dumps({"test_number" : characterized_pump['test_number']}, indent=4)
@@ -1254,7 +1269,6 @@ def next(widget, button_pin):
     global second_flank_detected_time
     global first_flank_detected
 
-    print("Holiiiiiiiiiiiiiiiiii")
     
 
     if first_flank_detected:
