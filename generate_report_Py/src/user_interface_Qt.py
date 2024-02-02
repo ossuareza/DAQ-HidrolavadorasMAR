@@ -9,6 +9,8 @@ from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem, QHeaderView
 import argparse
 import json
 
+
+
 # Define how the software id going to be executed
 
 parser = argparse.ArgumentParser()
@@ -35,6 +37,7 @@ use_wattmeter_3 = not args.not_use_wattmeter_3
 from generate_html import generate_html
 from generate_pdf import generate_pdf
 from plotter import Plotter
+from send_email import send_email
 
 # If this is a interface test, unable the communication protocols, so you can test it without the raspberry or the sensors
 if not testing_interface:
@@ -266,27 +269,28 @@ class FirstWindow(Window):
             self.alerts.setStyleSheet(f''' color: red ''')
         
         else:
+            characterized_pump["service_order"] = self.lE_1_service_order.text()
+            characterized_pump["delegate"] = self.lE_2_delegate.text()
+            characterized_pump["date"] = self.lE_3_date.text()
+            characterized_pump["model"] = self.lE_4_pump_model.text()
+            characterized_pump["motor_speed"] = self.lE_5_motor_speed.text()
+            characterized_pump["power"] = self.lE_6_pump_power.text()
+            characterized_pump["parking_slot"] = self.lE_7_parking_slot.text()
+            characterized_pump["total_measurements"] = int(self.measurements.text())
+            
             widget.setCurrentIndex(1) # Go to the next window
             print(f"Booleano de reseteo en Primera Ventana: {self.reset_enabled}")
             
             if self.reset_enabled: # Reset variables if asked
                     print("Reseteando Variables")
                     widget.currentWidget().resetVariables()
+                    widget.currentWidget().progressBar.setValue(0)
                     self.reset_enabled = False
-
+        
 
 
         
-        characterized_pump["service_order"] = self.lE_1_service_order.text()
-        characterized_pump["delegate"] = self.lE_2_delegate.text()
-        characterized_pump["date"] = self.lE_3_date.text()
-        characterized_pump["model"] = self.lE_4_pump_model.text()
-        characterized_pump["motor_speed"] = self.lE_5_motor_speed.text()
-        characterized_pump["power"] = self.lE_6_pump_power.text()
-        characterized_pump["parking_slot"] = self.lE_7_parking_slot.text()
-        characterized_pump["total_measurements"] = int(self.measurements.text())
-
-        print(characterized_pump)
+        
 
 class SecondWindow(Window):
     def __init__(self, path, screen_width):
@@ -365,7 +369,7 @@ class SecondWindow(Window):
         self.lcdNumber_fo.hide()
         self.label_fo_units.hide()
 
-        self.pushButton.clicked.connect(self.goToNextTask)
+        # self.pushButton.clicked.connect(self.goToNextTask)
 
         self.flowmeter_pulses = 0
         
@@ -428,13 +432,14 @@ class SecondWindow(Window):
         #     GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = self.goToNextTask, bouncetime = 1500)
 
         # If all the measurements were taken, then go to next screen
-        if self.actual_step // 2 == characterized_pump["total_measurements"]:
+        if self.actual_step == 2 * characterized_pump["total_measurements"]:
             # GPIO.remove_event_detect(self.green_button_pin)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(2).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(2)
+            print(widget.currentWidget(), "()" * 40)
             widget.currentWidget().goToNextTask()
             return
-        
+        print("Holiwis" + "()" * 30)
         # If the push button is not enabled, do not allow to execute the routines.
         # This is necessary for the physical button connected to the Raspberry Pi
         if not self.pushButton.isEnabled():
@@ -1038,7 +1043,7 @@ class ThirdWindow(Window):
     
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
-        self.pushButton.clicked.connect(self.goToNextTask)
+        self.pushButton_1.clicked.connect(self.goToNextTask)
         self.pushButton_2.clicked.connect(self.resetMeasurementProcess)
         self.count_button_pushed = 0
 
@@ -1052,7 +1057,9 @@ class ThirdWindow(Window):
                 col += 1
     
     def goToNextTask(self):
-        
+        print("Entrando a la ventana de resuemen" + "=" * 20)
+        print(widget.currentWidget(), "()" * 40)
+        print(self.count_button_pushed)
         global characterized_pump
         self.label_7.setText (characterized_pump["service_order"])
         self.label_12.setText(characterized_pump["delegate"])
@@ -1084,8 +1091,9 @@ class ThirdWindow(Window):
         self.count_button_pushed += 1
         
         if self.count_button_pushed >= 2:
-            # GPIO.remove_event_detect(self.green_button_pin)
-            # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(0).goToNextTask, bouncetime = 2000)
+            self.count_button_pushed = 0
+            
+            print("Cambio a la generación de PDF")
             widget.setCurrentIndex(3)
 
 
@@ -1096,14 +1104,11 @@ class ThirdWindow(Window):
                 if line_edit[i].text() != "":
                     characterized_pump[key] = line_edit[i].text()
 
-
-            if self.lineEdit_1.text() != "": 
-                characterized_pump["service_order"] = self.lineEdit_1.text()
-
-            self.count_button_pushed = 0
+            
             
     def resetMeasurementProcess(self):
         
+        self.count_button_pushed = 0
         widget.setCurrentIndex(0)
             
         widget.currentWidget().reset_enabled = True
@@ -1121,6 +1126,8 @@ class ThirdWindow(Window):
         widget.currentWidget().lE_6_pump_power.setText("")
         widget.currentWidget().lE_7_parking_slot.setText("")
         widget.currentWidget().measurements.setValue(5)
+
+        self.count_button_pushed = 0
             
 
         
@@ -1169,18 +1176,14 @@ class FourthWindow(Window):
             # widget.currentWidget().triplex.setChecked(False)
             widget.currentWidget().single_phase.setChecked(False)
             # widget.currentWidget().three_phase.setChecked(False)
+
+            self.count_button_pushed = 0
+            self.progressBar.setValue(0)
             
             return
 
+        self.pushButton.setEnabled(False)
         self.alerts.setText("Generando reporte")
-
-        # characterized_pump["flow"] = [1,2,3,4,5]
-        # characterized_pump["pressure"] =  [55, 54.5, 54, 53, 52.5, 51.7, 50, 48.5, 46, 44]
-        # characterized_pump["velocity"] =  [1,2,3,4,5,6,7,8,9,10]
-        # characterized_pump["elevation"] =  [1,2,3,4,5,6,7,8,9,10]
-        # characterized_pump["pump_total"] =  [1,2,3,4,5,6,7,8,9,10]
-        # characterized_pump["pump_power"] =  [6,12,14,20,22]
-        # characterized_pump["pump_efficiency"] =  [0,10,20,20,25,30,40,70,60,50]
         
         # Finding most efficient point
 
@@ -1203,7 +1206,7 @@ class FourthWindow(Window):
         if not testing_interface:
             flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png")
             flow_vs_pressure.plotter()
-        self.progressBar.setValue(40)
+        
         
         if not testing_interface:
             flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png")
@@ -1224,13 +1227,15 @@ class FourthWindow(Window):
 
 
         # flow_vs_pump_efficiency.plotInterpolatedCurves(flow_curve, efficiency_curve)
-        self.progressBar.setValue(50)
+        self.progressBar.setValue(40)
+
+        
 
         # Generate a html file that is going to be used as a base for the pdf generation
         # if not testing_interface:
         generate_html(characterized_pump)
-        self.progressBar.setValue(70)
-
+        
+        self.progressBar.setValue(50)
  
         # resd to sample.json
         with open("data/json/test_count.json", "r") as openfile:
@@ -1242,6 +1247,13 @@ class FourthWindow(Window):
         
         generate_pdf(characterized_pump['test_number'], characterized_pump["service_order"])
 
+        self.progressBar.setValue(70)
+        
+        # Send report
+        send_email(characterized_pump['test_number'], characterized_pump["service_order"], characterized_pump['date'], 
+                    characterized_pump["delegate"], characterized_pump['model'], characterized_pump["parking_slot"])
+
+        # Update the report counter
         
         json_object = json.dumps({"test_number" : characterized_pump['test_number']}, indent=4)
  
@@ -1249,10 +1261,14 @@ class FourthWindow(Window):
         with open("data/json/test_count.json", "w") as outfile:
             outfile.write(json_object)
 
+        
+
             
         self.progressBar.setValue(100)
 
         self.alerts.setText("Generación de reporte finalizado")
+
+        self.pushButton.setEnabled(True)
 
         self.pushButton.setText("Caracterizar otra bomba")
 
@@ -1403,8 +1419,8 @@ if __name__ == '__main__':
         GPIO.setup(red_led_pin,GPIO.OUT)
 
     widget = QtWidgets.QStackedWidget()
+
     information_window = FirstWindow("Information_screen.ui", screen_width)
-    # information_window.pushButton.clicked.connect(getInformation)
     widget.addWidget(information_window)
 
     measurements_window = SecondWindow("Measurements_screen.ui", screen_width)

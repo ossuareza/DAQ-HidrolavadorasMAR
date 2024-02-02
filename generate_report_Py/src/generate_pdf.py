@@ -17,7 +17,7 @@ def generate_pdf(test_number, service_order):
     path_to_input_html = os.path.join("data", "html", 'report.html') 
 
     # Output PDF file
-    file_name = f"report_{test_number}_{service_order}.pdf"
+    file_name = f"Reporte_No_{test_number}_Orden_{service_order}.pdf"
 
     path_to_output_file = os.path.join("data", "report", file_name)
 
