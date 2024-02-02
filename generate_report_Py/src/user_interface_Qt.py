@@ -175,6 +175,36 @@ pressure_out_global = 0
 
 # !adc = Adafruit_ADS1x15.ADS1115()
 
+from six.moves.queue import Queue
+from PyQt5.QtCore import pyqtSlot as pyQtSlot
+
+class RelayThread(QThread):
+    event_detected = pyqtSignal(int)
+    def __init__(self, channel):
+        QThread.__init__(self)
+        self.queue = Queue()
+
+        if not testing_interface or testing_buttons:
+            GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            # green_button_pin = 27 # Button to advance though the user interface
+            # GPIO.setup(channel, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            # print(str(GPIO.input(channel)))
+            GPIO.add_event_detect(channel, GPIO.BOTH, callback=self.queue.put_nowait, bouncetime = 200)
+
+    def run(self):
+        # while True:
+        #     if self.queue.not_empty:
+        #         try:
+        #             self.event_detected.emit(self.queue.get_nowait())
+        #         except:
+        #             True
+        while True:
+            self.event_detected.emit(self.queue.get())
+
+
+
+
+
 class Window(QtWidgets.QMainWindow):
     def __init__(self, path, screen_width):
         super(Window,self).__init__()
@@ -183,11 +213,9 @@ class Window(QtWidgets.QMainWindow):
 
         self.defineFontSizes(self.centralwidget)
 
+        
 
 
-        
-        # self.green_button_pin = 27
-        
         
     def defineFontSizes(self, main_object): # Adaptative size for text
 
@@ -220,6 +248,74 @@ class Window(QtWidgets.QMainWindow):
             self.defineFontSizes(element)
 
 
+
+
+class PyQt_RPI(Window):
+
+    def __init__(self, widget):
+        super(Window,self).__init__()
+        self.relay_thread = RelayThread(27)
+        self.relay_thread.event_detected.connect(self.on_gpio_event)
+        self.relay_thread.start()
+        self.widget_array = widget
+
+        self.previous_state = None
+        self.second_flank_detected_time = 0
+        self.first_flank_detected_time = 0
+        
+        # self.green_button_pin = 27
+        self.first_flank_detected_time = 0
+        self.second_flank_detected_time = 0
+        self.first_flank_detected = False
+
+
+    @pyQtSlot(int)
+    def on_gpio_event(self, channel):
+        
+
+        if self.first_flank_detected:
+            self.second_flank_detected_time = time.time() - self.first_flank_detected_time
+            print(self.second_flank_detected_time)
+            if self.second_flank_detected_time >= 0.3 and self.second_flank_detected_time <= 2:
+                print("Green button pressed.")
+                QTimer.singleShot(200, widget.currentWidget().goToNextTask)
+
+            self.first_flank_detected = False
+            # second_flank_detected = True
+
+        else:
+            self.first_flank_detected_time = time.time()
+            self.first_flank_detected = True
+
+
+
+        """ if self.previous_state is None:
+            self.previous_state = GPIO.input(channel)
+            self.first_flank_detected_time = time.time()
+            
+
+        else:
+            current_state = GPIO.input(channel)
+            #print(f"pin {4}: {str(GPIO.input(4))}")
+            if current_state != self.previous_state:
+                # Flank detected
+                self.second_flank_detected_time = time.time()
+            
+            if self.second_flank_detected_time - self.first_flank_detected_time >= 0.8:
+                # Signal has stayed in the new state for at least 1 second
+                print("Red button pressed.")
+                self.previous_state = None
+                self.widget_array.currentWidget().goToNextTask()
+                print("An event occurred on channel {}".format(channel))
+
+            elif time.time() - self.first_flank_detected_time >= 3:
+                return """
+        
+            
+
+    
+
+
 class FirstWindow(Window):
     def __init__(self, path, screen_width):
         super().__init__(path, screen_width)
@@ -228,6 +324,9 @@ class FirstWindow(Window):
         self.alerts.setStyleSheet(f''' color: green ''')
 
         self.reset_enabled = False
+
+        
+
     
     def goToNextTask(self,*channel):
         alert_message = ""
@@ -279,6 +378,10 @@ class FirstWindow(Window):
             characterized_pump["total_measurements"] = int(self.measurements.text())
             
             widget.setCurrentIndex(1) # Go to the next window
+
+            
+
+
             print(f"Booleano de reseteo en Primera Ventana: {self.reset_enabled}")
             
             if self.reset_enabled: # Reset variables if asked
@@ -439,7 +542,7 @@ class SecondWindow(Window):
             print(widget.currentWidget(), "()" * 40)
             widget.currentWidget().goToNextTask()
             return
-        print("Holiwis" + "()" * 30)
+
         # If the push button is not enabled, do not allow to execute the routines.
         # This is necessary for the physical button connected to the Raspberry Pi
         if not self.pushButton.isEnabled():
@@ -701,15 +804,15 @@ class SecondWindow(Window):
 
         total_suction_head   = z1 + pressure_in * (100000) / (water_density * g) + velocity_head_1 - suction_loses
         total_discharge_head = z2 + pressure_out * (100000)/ (water_density * g) + velocity_head_2 + discharge_loses
-        print("PERDIDAS ============================================")
-        print(f"suction_loses: {suction_loses}")
-        print(f"discharge_loses: {discharge_loses}")
-        print("PRESIONES ============================================")
-        print(f"pressure_in: {pressure_in}")
-        print(f"pressure_out: {pressure_out}")
-        print("CABEZAS ============================================")
-        print(f"total_suction_head: {total_suction_head}")
-        print(f"total_discharge_head: {total_discharge_head}")
+        # print("PERDIDAS ============================================")
+        # print(f"suction_loses: {suction_loses}")
+        # print(f"discharge_loses: {discharge_loses}")
+        # print("PRESIONES ============================================")
+        # print(f"pressure_in: {pressure_in}")
+        # print(f"pressure_out: {pressure_out}")
+        # print("CABEZAS ============================================")
+        # print(f"total_suction_head: {total_suction_head}")
+        # print(f"total_discharge_head: {total_discharge_head}")
 
         pump_total = total_discharge_head - total_suction_head
 
@@ -1058,7 +1161,7 @@ class ThirdWindow(Window):
     
     def goToNextTask(self):
         print("Entrando a la ventana de resuemen" + "=" * 20)
-        print(widget.currentWidget(), "()" * 40)
+        # print(widget.currentWidget(), "()" * 40)
         print(self.count_button_pushed)
         global characterized_pump
         self.label_7.setText (characterized_pump["service_order"])
@@ -1292,7 +1395,7 @@ def next(widget, button_pin):
         print(second_flank_detected_time)
         if second_flank_detected_time >= 0.3 and second_flank_detected_time <= 2:
             print("Green button pressed.")
-            widget.currentWidget().goToNextTask()
+            QTimer.singleShot(200, widget.currentWidget().goToNextTask)
 
         first_flank_detected = False
         # second_flank_detected = True
@@ -1406,10 +1509,10 @@ if __name__ == '__main__':
         print(str(GPIO.input(red_button_pin)))
         GPIO.add_event_detect(red_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget, red_button_pin), bouncetime = 300)
 
-        green_button_pin = 27 # Button to advance though the user interface
+        """ green_button_pin = 27 # Button to advance though the user interface
         GPIO.setup(green_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         print(str(GPIO.input(green_button_pin)))
-        GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget, green_button_pin), bouncetime = 300)
+        GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(widget, green_button_pin), bouncetime = 300) """
         # GPIO.add_event_detect(green_button_pin, GPIO.FALLING, callback = lambda x: closeApp(widget))
 
         green_led_pin = 0 #! Define pins
@@ -1431,6 +1534,10 @@ if __name__ == '__main__':
 
     report_generation_window = FourthWindow("Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
+
+    button_window = PyQt_RPI(widget)
+    # widget.addWidget(button_window)
+
     # widget.setFixedWidth(screen_width)
     # widget.setFixedHeight(screen_height)
     widget.show()
