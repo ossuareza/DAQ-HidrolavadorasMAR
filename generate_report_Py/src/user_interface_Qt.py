@@ -111,7 +111,13 @@ characterized_pump = {
 
 
 
-water_properties_path = os.path.join("data", "water_properties", "Propiedades_agua.xlsx")  # Load table for water densities at different temperatures
+script_path = os.path.abspath(sys.argv[0])
+src_path = os.path.dirname(script_path)
+directory_path = os.path.dirname(src_path)
+
+
+
+water_properties_path = os.path.join(directory_path, "data", "water_properties", "Propiedades_agua.xlsx")  # Load table for water densities at different temperatures
 water_properties_df = pd.read_excel(water_properties_path) # Load table for water densities at different temperatures
 
 
@@ -189,15 +195,9 @@ class RelayThread(QThread):
             # green_button_pin = 27 # Button to advance though the user interface
             # GPIO.setup(channel, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             # print(str(GPIO.input(channel)))
-            GPIO.add_event_detect(channel, GPIO.BOTH, callback=self.queue.put_nowait, bouncetime = 200)
+            GPIO.add_event_detect(channel, GPIO.BOTH, callback=self.queue.put_nowait, bouncetime = 100)
 
     def run(self):
-        # while True:
-        #     if self.queue.not_empty:
-        #         try:
-        #             self.event_detected.emit(self.queue.get_nowait())
-        #         except:
-        #             True
         while True:
             self.event_detected.emit(self.queue.get())
 
@@ -241,7 +241,7 @@ class Window(QtWidgets.QMainWindow):
                 if "alerts" in element.widget().objectName():
                     element.widget().setStyleSheet(f''' font-size: {int(title_font_size * 3/2)}px; color: red''')
                 if "logo" in element.widget().objectName():
-                    image_path = os.path.join("data", "imgs", "logo.png")
+                    image_path = os.path.join(directory_path, "data", "imgs", "logo.png")
                     pixmap_image = QPixmap(image_path)
                     element.widget().setPixmap(pixmap_image.scaledToWidth(self.screen_width // 6))
                     element.widget().setAlignment(Qt.AlignCenter)
@@ -272,11 +272,12 @@ class PyQt_RPI(Window):
     @pyQtSlot(int)
     def on_gpio_event(self, channel):
         
-
+        
         if self.first_flank_detected:
+            print("Second flank")
             self.second_flank_detected_time = time.time() - self.first_flank_detected_time
             print(self.second_flank_detected_time)
-            if self.second_flank_detected_time >= 0.3 and self.second_flank_detected_time <= 2:
+            if self.second_flank_detected_time >= 0.1 and self.second_flank_detected_time <= 2:
                 print("Green button pressed.")
                 QTimer.singleShot(200, widget.currentWidget().goToNextTask)
 
@@ -284,6 +285,7 @@ class PyQt_RPI(Window):
             # second_flank_detected = True
 
         else:
+            print("First flank")
             self.first_flank_detected_time = time.time()
             self.first_flank_detected = True
 
@@ -1342,7 +1344,7 @@ class FourthWindow(Window):
         self.progressBar.setValue(50)
  
         # resd to sample.json
-        with open("data/json/test_count.json", "r") as openfile:
+        with open(directory_path + "data/json/test_count.json", "r") as openfile:
             json_object = json.load(openfile)
 
         # Generate the final report in pdf
@@ -1362,7 +1364,7 @@ class FourthWindow(Window):
         json_object = json.dumps({"test_number" : characterized_pump['test_number']}, indent=4)
  
         # Writing to sample.json
-        with open("data/json/test_count.json", "w") as outfile:
+        with open(directory_path + "data/json/test_count.json", "w") as outfile:
             outfile.write(json_object)
 
         
@@ -1470,7 +1472,7 @@ def closeApp(widget, button_pin):
 
 
     widget.close()
-    # os.system("shutdown now") #shut down the Pi -h is or -r will reset
+    os.system("shutdown -h +1") 
 
 def turnOnLed(led_pin):
 
@@ -1501,8 +1503,11 @@ if __name__ == '__main__':
         GPIO.setmode(GPIO.BCM)
         
 
-        synthetic_gnd_pin = 18
+        synthetic_gnd_pin = 23
         GPIO.setup( synthetic_gnd_pin , GPIO.OUT)
+        
+        GPIO.output( synthetic_gnd_pin, GPIO.HIGH)
+        time.sleep(1)
         GPIO.output( synthetic_gnd_pin, GPIO.LOW)
 
         red_button_pin = 22 # Button to close the app

@@ -5,7 +5,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import sys
 
+script_path = os.path.abspath(sys.argv[0])
+src_path = os.path.dirname(script_path)
+directory_path = os.path.dirname(src_path)
 
 class Plotter():
 
@@ -78,7 +82,7 @@ class Plotter():
         plt.title(self.title)
         plt.xlabel(self.x_label)
         plt.ylabel(self.y_label)
-        path_to_img = os.path.join("data", "imgs", self.file_name)
+        path_to_img = os.path.join(directory_path, "data", "imgs", self.file_name)
         # plt.show()
         plt.savefig(path_to_img)
 

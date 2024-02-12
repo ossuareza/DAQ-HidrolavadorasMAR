@@ -95,8 +95,13 @@ if __name__ == '__main__':
     GPIO.setup(green_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(green_button_pin, GPIO.RISING, callback = lambda x: next(green_button_pin), bouncetime = 1000)
 
+
+    GPIO.setup(18, GPIO.OUT)
     while True:
-        pass
+        GPIO.output( 18, GPIO.LOW)
+        time.sleep(1)
+        GPIO.output( 18, GPIO.HIGH)
+        time.sleep(1)
     # print(f"pin {4}: {str(GPIO.input(4))}")
     #if GPIO.input(4) == 0:
      #   print(f"Pulso detectado")

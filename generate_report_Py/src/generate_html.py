@@ -1,12 +1,17 @@
 import os
+import sys
 
 def generate_html(pump):
 
-    path_to_imgs = os.path.join("data", "imgs")
+    script_path = os.path.abspath(sys.argv[0])
+    src_path = os.path.dirname(script_path)
+    directory_path = os.path.dirname(src_path)
 
-    flow_vs_power_path = os.path.join("data", "imgs", "FlowVsPower.png")
-    flow_vs_efficiency_path = os.path.join("data", "imgs", "FlowVsEfficiency.png")
-    flow_vs_head_path = os.path.join("data", "imgs", "FlowVsHead.png")
+    path_to_imgs = os.path.join(directory_path, "data", "imgs")
+
+    flow_vs_power_path = os.path.join(directory_path, "data", "imgs", "FlowVsPower.png")
+    flow_vs_efficiency_path = os.path.join(directory_path, "data", "imgs", "FlowVsEfficiency.png")
+    flow_vs_head_path = os.path.join(directory_path, "data", "imgs", "FlowVsHead.png")
 
     html_content = """
     <!DOCTYPE html>
@@ -128,7 +133,7 @@ def generate_html(pump):
             <td colspan=8 height="50" align="center" ><img src="{flow_vs_power_path}" alt="Flujo vs Potencia" width="900" height="300"></td>
             </tr>
         <tr>
-            <td colspan=8 height="50" align="center" ><img src="../../data/imgs/FlowVsHead.png" alt="Flujo vs Cabeza" width="900" height="300"></td>
+            <td colspan=8 height="50" align="center" ><img src="{flow_vs_head_path}" alt="Flujo vs Cabeza" width="900" height="300"></td>
             </tr>
         <tr>
             <td colspan=8 height="50" align="center" ><img src="{flow_vs_efficiency_path}" alt="Flujo vs Eficiencia" width="900" height="300"></td>

@@ -56,6 +56,21 @@ master2.set_timeout(2.0)
 master2.set_verbose(True)
 
 
+wattmeter_3 = serial.Serial(
+                       port='/dev/ttyAMA2',
+                       baudrate=9600,
+                       bytesize=8,
+                       parity='N',
+                       stopbits=1,
+                       xonxoff=0
+                      )
+
+master3 = modbus_rtu.RtuMaster(wattmeter_3)
+master3.set_timeout(2.0)
+master3.set_verbose(True)
+
+
+
 while True:
 	data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
 	voltage = data[0] / 10.0 # [V]
@@ -86,8 +101,26 @@ while True:
 	print('Voltage 2 [V]\t: ', voltage2)
 	print('Current 2 [A]\t: ', current2)
 	print('Power 2 [W]\t: ', power2) # active power (V * I * power factor)
+
+
+	data3 = master3.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+	voltage3 = data3[0] / 10.0 # [V]
+	current3 = (data3[1] + (data3[2] << 16)) / 1000.0 # [A]
+	power3 = (data3[3] + (data3[4] << 16)) / 10.0 # [W]
+	energy3 = data3[5] + (data3[6] << 16) # [Wh]
+	frequency3 = data3[7] / 10.0 # [Hz]
+	powerFactor3 = data3[8] / 100.0
+	alarm3 = data3[9] # 0 = no alarm
+	# print("Segundaaaaaaaaaaaaaaaaa")
+	print('Voltage 3 [V]\t: ', voltage3)
+	print('Current 3 [A]\t: ', current3)
+	print('Power 3 [W]\t: ', power3) # active power (V * I * power factor)
+
+	
+
 	print("=====================================")
 
+	time.sleep(1)
 	# print("Potencia activa:", power + power2)
 	# print('Energy [Wh]\t: ', energy2)
 	# print('Frequency [Hz]\t: ', frequency2)

@@ -5,7 +5,14 @@ from email.mime.application import MIMEApplication
 
 from dotenv import dotenv_values
 
+import os
+import sys
+
 def send_email(test_number, service_order, date, delegate, model, parking_slot):
+
+    script_path = os.path.abspath(sys.argv[0])
+    src_path = os.path.dirname(script_path)
+    directory_path = os.path.dirname(src_path)
 
     file_name = f'Reporte_No_{test_number}_Orden_{service_order}.pdf'
 
@@ -38,7 +45,7 @@ def send_email(test_number, service_order, date, delegate, model, parking_slot):
     msg.attach(MIMEText(body))
 
 
-    with open(f'data/report/{file_name}', 'rb') as f:
+    with open(f'{directory_path}/data/report/{file_name}', 'rb') as f:
         attachment = MIMEApplication(f.read(), _subtype='pdf')
         attachment.add_header('Content-Disposition', 'attachment', filename=file_name) 
         msg.attach(attachment)

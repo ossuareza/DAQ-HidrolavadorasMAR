@@ -4,7 +4,7 @@ from generate_pdf import generate_pdf
 from plotter import Plotter
 import numpy as np
 import os
-
+import sys
 
 characterized_pump = {
     "motor_speed" : 3450, 
@@ -51,6 +51,11 @@ characterized_pump["final_head"] =  characterized_pump["pressure"][index]
 characterized_pump["final_efficiency"] =  characterized_pump["pump_efficiency"][index]
 
 def generate_report(characterized_pump):
+
+    script_path = os.path.abspath(sys.argv[0])
+    src_path = os.path.dirname(script_path)
+    directory_path = os.path.dirname(src_path)
+
     # Generate the graphs of power, pressure, efficiency vs flow
     # plotter(characterized_pump["flow"], characterized_pump["pump_power"], "FlowVsPower.png","Flujo vs Potencia","Flujo (L/min)","Potencia (W)")
     # plotter(characterized_pump["flow"], characterized_pump["pressure"], "FlowVsHead.png","Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)")
@@ -117,6 +122,6 @@ plt.title("Manómetro vs Sensor digital")
 plt.xlabel("Flujo (L/min)")
 plt.ylabel("Presión (psi)")
 plt.legend(['Manómetro','','Sensor digital',''])
-path_to_img = os.path.join("data", "imgs", "Comparación de sensores")
+path_to_img = os.path.join(directory_path, "data", "imgs", "Comparación de sensores")
 # plt.show()
 plt.savefig(path_to_img)
