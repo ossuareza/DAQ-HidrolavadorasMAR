@@ -963,25 +963,26 @@ def measurePower():
 
     elif characterized_pump['motor_type'] == 'three-phase':
 
-        if use_wattmeter_1:
+        if use_wattmeter_1 and use_wattmeter_2 and use_wattmeter_3:
             data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
             V_L_1 = data[0] / 10.0 # [V]
-            power = (data[3] + (data[4] << 16)) / 10.0 # [W]
-
-        if use_wattmeter_3:
+            power_1 = (data[3] + (data[4] << 16)) / 10.0 # [W]
+            
+            data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
+            current_2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
+            
             data_3 = master3.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-            V_L_3 = data_3[0] / 10.0 # [V]
+            
             power_3 = (data_3[3] + (data_3[4] << 16)) / 10.0 # [W]
 
+            active_power = power_1 + power_2 + power_3
 
-        if use_wattmeter_1 and use_wattmeter_3:
-            active_power = power + power_3
-
-            phi = np.arctan2( np.sqrt(3) * (power - power_2) / (power + power_2))
-
-            V_L = (V_L_1 + V_L_3) / 2
-
-            current = np.sqrt(3) * (power - power_3) / (V_L * np.sin(phi))
+            power_factor = 0.86
+            V_L_3 = data_3[0] / 10.0 # [V]
+            current = ((active_power / 3) / power_factor * 1000) / V_L_3
+            
+        
         else:
             active_power = 0
             current = 0
