@@ -570,6 +570,7 @@ class SecondWindow(Window):
                 self.flowmeter_pin = 17
                 print("Caudalímetro de las bombas triplex")
             
+            print("FLOWMETERPIN: ", self.flowmeter_pin)
             if not testing_interface:
                 GPIO.setup(self.flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
                 GPIO.add_event_detect(self.flowmeter_pin, GPIO.RISING, callback = self.detectPulses)    
@@ -1529,16 +1530,16 @@ if __name__ == '__main__':
 
     widget = QtWidgets.QStackedWidget()
 
-    information_window = FirstWindow("Information_screen.ui", screen_width)
+    information_window = FirstWindow(directory_path + "/Information_screen.ui", screen_width)
     widget.addWidget(information_window)
 
-    measurements_window = SecondWindow("Measurements_screen.ui", screen_width)
+    measurements_window = SecondWindow(directory_path + "/Measurements_screen.ui", screen_width)
     widget.addWidget(measurements_window)
 
-    resume_window = ThirdWindow('Resume_screen.ui', screen_width)
+    resume_window = ThirdWindow(directory_path + '/Resume_screen.ui', screen_width)
     widget.addWidget(resume_window)
 
-    report_generation_window = FourthWindow("Generate_Report.ui", screen_width)
+    report_generation_window = FourthWindow(directory_path + "/Generate_Report.ui", screen_width)
     widget.addWidget(report_generation_window)
 
     button_window = PyQt_RPI(widget)
