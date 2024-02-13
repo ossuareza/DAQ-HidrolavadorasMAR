@@ -1354,7 +1354,7 @@ class FourthWindow(Window):
         self.progressBar.setValue(50)
  
         # resd to sample.json
-        with open(directory_path + "data/json/test_count.json", "r") as openfile:
+        with open(directory_path + "/data/json/test_count.json", "r") as openfile:
             json_object = json.load(openfile)
 
         # Generate the final report in pdf
@@ -1374,7 +1374,7 @@ class FourthWindow(Window):
         json_object = json.dumps({"test_number" : characterized_pump['test_number']}, indent=4)
  
         # Writing to sample.json
-        with open(directory_path + "data/json/test_count.json", "w") as outfile:
+        with open(directory_path + "/data/json/test_count.json", "w") as outfile:
             outfile.write(json_object)
 
         
