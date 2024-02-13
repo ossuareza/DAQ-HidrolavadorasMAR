@@ -357,9 +357,13 @@ class FirstWindow(Window):
 
         if self.single_phase.isChecked():
             characterized_pump["motor_type"] = "single-phase"
+
+        elif self.two_phase.isChecked():
+            characterized_pump["motor_type"] = "two-phase"
             
         elif self.three_phase.isChecked():
             characterized_pump["motor_type"] = "three-phase" 
+        
 
         else:
             alert_message += "Debe seleccionar un tipo de motor"
@@ -744,13 +748,16 @@ class SecondWindow(Window):
         g = 9.798 # m/s^2
 
         
-        
-        water_properties = water_properties_df[water_properties_df['Temp. [°C]'] == temperature]
+        try:        
+            water_properties = water_properties_df[water_properties_df['Temp. [°C]'] == temperature]
 
-        water_density = float(water_properties['Densidad [kg/m3]'].iloc[0])
+            water_density = float(water_properties['Densidad [kg/m3]'].iloc[0])
 
-        water_viscosity = float(water_properties['Viscocidad cinematica [m²/s]'].iloc[0])
+            water_viscosity = float(water_properties['Viscocidad cinematica [m²/s]'].iloc[0])
+        except:
+            water_density = 997.8
 
+            water_viscosity = 0.0000009565
         
         g = 9.798
 
@@ -976,6 +983,34 @@ def measurePower():
         else:
             active_power = 0
             current = 0
+
+    elif characterized_pump['motor_type'] == 'two-phase':
+        if use_wattmeter_1 and use_wattmeter_2 and use_wattmeter_3:
+            data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            V_L_1 = data[0] / 10.0 # [V]
+            power_1 = (data[3] + (data[4] << 16)) / 10.0 # [W]
+            
+            data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            power_2 = (data_2[3] + (data_2[4] << 16)) / 10.0 # [W]
+            current_2 = (data_2[1] + (data_2[2] << 16)) / 1000.0 # [A]
+            
+            data_3 = master3.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+            
+            power_3 = (data_3[3] + (data_3[4] << 16)) / 10.0 # [W]
+
+
+
+            active_power = power_1 + power_2 + power_3
+
+            power_factor = 0.86
+            V_L_3 = data_3[0] / 10.0 # [V]
+            current = ((active_power / 3) / power_factor) / V_L_3
+            
+        
+        else:
+            active_power = 0
+            current = 0
+
 
 
     elif characterized_pump['motor_type'] == 'three-phase':
@@ -1295,6 +1330,7 @@ class FourthWindow(Window):
             widget.currentWidget().roto.setChecked(False)
             # widget.currentWidget().triplex.setChecked(False)
             widget.currentWidget().single_phase.setChecked(False)
+            widget.currentWidget().two_phase.setChecked(False)
             # widget.currentWidget().three_phase.setChecked(False)
 
             self.count_button_pushed = 0
@@ -1322,7 +1358,7 @@ class FourthWindow(Window):
             degree = 1
 
         if not testing_interface:
-            flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png", degree)
+            flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png", 3)
             flow_vs_pump_power.plotter()
 
         self.progressBar.setValue(30)
@@ -1333,7 +1369,7 @@ class FourthWindow(Window):
         
         
         if not testing_interface:
-            flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png", degree)
+            flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png", 3)
             flow_vs_pump_efficiency.plotter()
 
 

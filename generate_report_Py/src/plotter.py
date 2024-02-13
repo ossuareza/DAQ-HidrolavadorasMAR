@@ -56,6 +56,8 @@ class Plotter():
                 curve = np.poly1d(coefficients)
             
             elif self.degree == 1:
+
+                self.y_data = [np.mean(self.y_data ) ] * 3
                 coefficients = np.polyfit(self.x_data, self.y_data, self.degree)
                 curve = np.poly1d(coefficients)
 
