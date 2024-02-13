@@ -989,7 +989,6 @@ def measurePower():
     elif characterized_pump['motor_type'] == 'two-phase':
         if use_wattmeter_1 and use_wattmeter_2 and use_wattmeter_3:
             data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-            V_L_1 = data[0] / 10.0 # [V]
             power_1 = (data[3] + (data[4] << 16)) / 10.0 # [W]
             
             data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
@@ -1000,13 +999,17 @@ def measurePower():
             
             power_3 = (data_3[3] + (data_3[4] << 16)) / 10.0 # [W]
 
+            power_list = [power_1, power_2, power_3]
+            power_list.sort(reverse=True)
 
-
-            active_power = power_1 + power_2 + power_3
+            active_power = power_list[0] + power_list[1]
 
             power_factor = 0.86
-            V_L_3 = data_3[0] / 10.0 # [V]
-            current = ((active_power / 3) / power_factor) / V_L_3
+
+            voltage_list = [data[0] / 10.0, data_2[0] / 10.0, data_3[0] / 10.0]
+            voltage_list.sort(reverse=True)
+
+            current = ((active_power / 2) / power_factor) / voltage_list[0]
             
         
         else:
@@ -1019,7 +1022,6 @@ def measurePower():
 
         if use_wattmeter_1 and use_wattmeter_2 and use_wattmeter_3:
             data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-            V_L_1 = data[0] / 10.0 # [V]
             power_1 = (data[3] + (data[4] << 16)) / 10.0 # [W]
             
             data_2 = master2.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
