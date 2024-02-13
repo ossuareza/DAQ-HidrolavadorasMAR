@@ -103,7 +103,7 @@ def generate_html(pump):
             """
     html_content += f"""
         <tr>
-            <td colspan=3 align="center" >Punto de garantía</td>
+            <td colspan=3 align="center" >Punto de máxima eficiencia</td>
             <td colspan=5 rowspan=5 align="left"><font size=4>Este test fue desarrollado con agua limpia a {pump["temperature"]} °C (temperatura ambiente). La cabeza, el flujo y la potencia fueron medidas con instrumentación electrónica y la exactitud de los resultados ha sido corroborada</font></td>
             </tr>
         <tr>
@@ -123,7 +123,7 @@ def generate_html(pump):
             </tr>
         <tr class="break-after">
             <td align="center" >Cabeza Máxima</td>
-            <td align="center" >{max(pump["pressure"])}</td>
+            <td align="center" >{round(max(pump["pressure"]), 2)}</td>
             <td align="center" >m</td>
             </tr>
     </table>

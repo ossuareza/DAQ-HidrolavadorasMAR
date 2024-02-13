@@ -156,7 +156,7 @@ if use_wattmeter_2 and not testing_interface:
 
 if use_wattmeter_3 and not testing_interface:
     wattmeter_3 = serial.Serial(
-                        port='/dev/ttyAMA2',
+                        port='/dev/ttyAMA3',
                         baudrate=9600,
                         bytesize=8,
                         parity='N',
@@ -570,9 +570,9 @@ class SecondWindow(Window):
                 self.are_variables_reset = False
 
 
-            self.flowmeter_pin = 4
+            self.flowmeter_pin = 24
             if characterized_pump["pump_type"] == "roto":
-                self.flowmeter_pin = 4 
+                self.flowmeter_pin = 24 
                 print("Caudalímetro de las bombas rotodinámicas")
             elif characterized_pump["pump_type"] == "triplex":
                 self.flowmeter_pin = 17
