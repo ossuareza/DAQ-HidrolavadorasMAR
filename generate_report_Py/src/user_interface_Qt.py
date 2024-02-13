@@ -758,6 +758,8 @@ class SecondWindow(Window):
             water_density = 997.8
 
             water_viscosity = 0.0000009565
+
+            print("FALLO LEYENDO MEDICIÓN DE TEMPERATURA. Temperatura = ", temperature)
         
         g = 9.798
 
