@@ -609,7 +609,7 @@ class SecondWindow(Window):
             if characterized_pump["pump_type"] == "roto":  
                 self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } \u00B1 {round(target_flow * 0.1, 2)} L/min")
             elif characterized_pump["pump_type"] == "triplex":
-                self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } L/min")
+                self.alerts.setText(f"Intente obtener un flujo de {target_flow } L/min")
             self.lcdNumber_fo.display(target_flow)
             self.alerts.setStyleSheet(f''' color: green ''')
             
