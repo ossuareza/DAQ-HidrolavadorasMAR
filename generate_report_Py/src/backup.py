@@ -51,7 +51,9 @@ characterized_pump = {
     "final_flow" : 0,
     "final_head" : 0, 
     "final_efficiency" : 0,
-    "total_measurements": 0
+    "total_measurements": 0,
+
+    "temperature": 0
 }
 
 

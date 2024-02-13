@@ -106,7 +106,9 @@ characterized_pump = {
     "final_flow" : 0,
     "final_head" : 0, 
     "final_efficiency" : 0,
-    "total_measurements": 0
+    "total_measurements": 0,
+
+    "temperature": 0
 }
 
 
@@ -467,6 +469,7 @@ class SecondWindow(Window):
         characterized_pump["final_flow"] =  0
         characterized_pump["final_head"] =  0
         characterized_pump["final_efficiency"] =  0
+        characterized_pump["temperature"] = 0
         
         
         self.alerts.setText("Preparando el sistema")
@@ -835,6 +838,8 @@ class SecondWindow(Window):
         characterized_pump["pump_total"].append(pump_total)
         characterized_pump["pump_power"].append(electrical_power)
 
+        characterized_pump["temperature"] = temperature
+
         hydraulic_power = water_density * g *  pump_total * self.flow * (1 / 60000) 
         characterized_pump["pump_efficiency"].append(hydraulic_power / electrical_power * 100)
         
@@ -1008,7 +1013,6 @@ def measurePower():
 def measureTemperature():
 
     if characterized_pump["pump_type"] == "roto":
-        print("Temperatura rotodinámicas")
         cs_pin = 1
 
     elif characterized_pump["pump_type"] == "triplex": 
@@ -1144,7 +1148,7 @@ class measureOnThread(QObject):
             pressure_in = 0
             pressure_out = 0
             electrical_power = 0
-            temperature = 22
+            temperature = 0
 
         else:
             pressure_in /= measurements_counter
@@ -1312,20 +1316,24 @@ class FourthWindow(Window):
         self.progressBar.setValue(20)
 
         # Generate the graphs of power, pressure, efficiency vs flow
+        if characterized_pump["pump_type"] == "roto":
+            grade = 3
+        elif characterized_pump["pump_type"] == "triplex":
+            grade = 1
 
         if not testing_interface:
-            flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png")
+            flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png", grade)
             flow_vs_pump_power.plotter()
 
         self.progressBar.setValue(30)
 
         if not testing_interface:
-            flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png")
+            flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png", grade)
             flow_vs_pressure.plotter()
         
         
         if not testing_interface:
-            flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png")
+            flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png", grade)
             flow_vs_pump_efficiency.plotter()
 
 

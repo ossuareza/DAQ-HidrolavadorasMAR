@@ -104,7 +104,7 @@ def generate_html(pump):
     html_content += f"""
         <tr>
             <td colspan=3 align="center" >Punto de garantía</td>
-            <td colspan=5 rowspan=5 align="left"><font size=4>Este test fue desarrollado con agua limpia a 20 °C (temperatura ambiente). La cabeza, el flujo y la potencia fueron medidas con instrumentación electrónica y la exactitud de los resultados ha sido corroborada</font></td>
+            <td colspan=5 rowspan=5 align="left"><font size=4>Este test fue desarrollado con agua limpia a {pump["temperature"]} °C (temperatura ambiente). La cabeza, el flujo y la potencia fueron medidas con instrumentación electrónica y la exactitud de los resultados ha sido corroborada</font></td>
             </tr>
         <tr>
             <td align="center" >Flujo</td>

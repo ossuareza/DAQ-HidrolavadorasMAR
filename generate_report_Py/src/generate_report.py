@@ -24,7 +24,9 @@ characterized_pump = {
     "pump_efficiency" : [],
     "final_flow" : 0,
     "final_head" : 0, 
-    "final_efficiency" : 0
+    "final_efficiency" : 0,
+
+    "temperature": 0
 }
 
 

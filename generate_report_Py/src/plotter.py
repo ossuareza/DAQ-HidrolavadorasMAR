@@ -13,13 +13,14 @@ directory_path = os.path.dirname(src_path)
 
 class Plotter():
 
-    def __init__(self, x_data, y_data, title, x_label, y_label, file_name):
+    def __init__(self, x_data, y_data, title, x_label, y_label, file_name, grade):
         self.x_data = x_data
         self.y_data = y_data
         self.title = title
         self.x_label = x_label
         self.y_label = y_label
         self.file_name = file_name
+        self.grade = grade
 
     # Curve model (polynomial of degree 2)
     def curve_model(self, x, params):
@@ -49,26 +50,26 @@ class Plotter():
 
     def plotter(self):
 
-        if self.y_label == "Cabeza (m)":
-            coefficients = self.optimization()
+        # if self.y_label == "Cabeza (m)":
+        #     coefficients = self.optimization()
+        #     curve = np.poly1d(coefficients)
+
+        #     x_curve = np.linspace(0, max(self.x_data), 100)
+        #     y_curve = curve(x_curve)
+        # else:
+        try:
+            coefficients = np.polyfit(self.x_data, self.y_data, 3)
             curve = np.poly1d(coefficients)
 
-            x_curve = np.linspace(0, max(self.x_data), 100)
+            # Generate more points on the curve for a smoother plot
+            x_curve = np.linspace(min(self.x_data), max(self.x_data), 100)
             y_curve = curve(x_curve)
-        else:
-            try:
-                coefficients = np.polyfit(self.x_data, self.y_data, 3)
-                curve = np.poly1d(coefficients)
+        
+        except:
+            x_curve = np.array([])
+            y_curve = np.array([])
 
-                # Generate more points on the curve for a smoother plot
-                x_curve = np.linspace(min(self.x_data), max(self.x_data), 100)
-                y_curve = curve(x_curve)
-            
-            except:
-                x_curve = np.array([])
-                y_curve = np.array([])
-
-                print("Problems with the flow variations")
+            print("Problems with the flow variations")
 
         # Generate more points on the curve for a smoother plot
         
