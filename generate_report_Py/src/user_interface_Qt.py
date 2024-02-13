@@ -276,7 +276,7 @@ class PyQt_RPI(Window):
         
         
         if self.first_flank_detected:
-            print("Second flank")
+            # print("Second flank")
             self.second_flank_detected_time = time.time() - self.first_flank_detected_time
             print(self.second_flank_detected_time)
             if self.second_flank_detected_time >= 0.1 and self.second_flank_detected_time <= 2:
@@ -287,7 +287,7 @@ class PyQt_RPI(Window):
             # second_flank_detected = True
 
         else:
-            print("First flank")
+            # print("First flank")
             self.first_flank_detected_time = time.time()
             self.first_flank_detected = True
 
@@ -1317,23 +1317,23 @@ class FourthWindow(Window):
 
         # Generate the graphs of power, pressure, efficiency vs flow
         if characterized_pump["pump_type"] == "roto":
-            grade = 3
+            degree = 3
         elif characterized_pump["pump_type"] == "triplex":
-            grade = 1
+            degree = 1
 
         if not testing_interface:
-            flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png", grade)
+            flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png", degree)
             flow_vs_pump_power.plotter()
 
         self.progressBar.setValue(30)
 
         if not testing_interface:
-            flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png", grade)
+            flow_vs_pressure = Plotter(characterized_pump["flow"], characterized_pump["pump_total"],"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png", degree)
             flow_vs_pressure.plotter()
         
         
         if not testing_interface:
-            flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png", grade)
+            flow_vs_pump_efficiency = Plotter(characterized_pump["flow"], characterized_pump["pump_efficiency"],"Flujo vs Eficiencia" ,"Flujo (L/min)","Eficiencia (%)", "FlowVsEfficiency.png", degree)
             flow_vs_pump_efficiency.plotter()
 
 
@@ -1402,7 +1402,7 @@ first_flank_detected = False
 second_flank_detected = False
 
 
-def next(widget, button_pin):
+""" def next(widget, button_pin):
 
     # previous_state = GPIO.input(button_pin)
     global first_flank_detected_time
@@ -1458,7 +1458,7 @@ def next(widget, button_pin):
 
     
 
-    # widget.widget(widget_index).goToNextTask()
+    # widget.widget(widget_index).goToNextTask() """
 
 
 def closeApp(widget, button_pin):
