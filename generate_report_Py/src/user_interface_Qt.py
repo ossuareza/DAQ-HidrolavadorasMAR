@@ -377,8 +377,12 @@ class FirstWindow(Window):
             characterized_pump["motor_speed"] = self.lE_5_motor_speed.text()
             characterized_pump["power"] = self.lE_6_pump_power.text()
             characterized_pump["parking_slot"] = self.lE_7_parking_slot.text()
-            characterized_pump["total_measurements"] = int(self.measurements.text())
-            
+
+            if characterized_pump["pump_type"] != "roto":
+                characterized_pump["total_measurements"] = int(self.measurements.text())
+            elif characterized_pump["pump_type"] != "triplex": 
+                characterized_pump["total_measurements"] = 3
+
             widget.setCurrentIndex(1) # Go to the next window
 
             
@@ -516,7 +520,8 @@ class SecondWindow(Window):
         # Hold pushButton disabled while a requirement is not achieved
         if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2 and self.actual_step != 1:
             if self.searching_target and self.actual_step % 2 == 1:
-                if (self.flow >= self.different_apertures[self.actual_step // 2] * 0.9 and self.flow <= self.different_apertures[self.actual_step // 2] * 1.1):
+                if ((self.flow >= self.different_apertures[self.actual_step // 2] * 0.9 and self.flow <= self.different_apertures[self.actual_step // 2] * 1.1)
+                    or characterized_pump["pump_type"] != "roto"):
                     # and (self.actual_step % 2 == 0 or self.actual_step == 1):
                     self.pushButton.setEnabled(True)
                 else:
@@ -600,7 +605,11 @@ class SecondWindow(Window):
             target_flow = round(self.different_apertures[self.actual_step // 2] , 2)
 
             # Show alerts to guide the search process of the target flow
-            self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } \u00B1 {round(target_flow * 0.1, 2)} L/min")
+
+            if characterized_pump["pump_type"] == "roto":  
+                self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } \u00B1 {round(target_flow * 0.1, 2)} L/min")
+            elif characterized_pump["pump_type"] == "triplex":
+                self.alerts.setText(f"Cierre la válvula hasta obtener flujo de {target_flow } L/min")
             self.lcdNumber_fo.display(target_flow)
             self.alerts.setStyleSheet(f''' color: green ''')
             
