@@ -997,7 +997,7 @@ def measurePower():
 
             power_factor = 0.86
             V_L_3 = data_3[0] / 10.0 # [V]
-            current = ((active_power / 3) / power_factor * 1000) / V_L_3
+            current = ((active_power / 3) / power_factor) / V_L_3
             
         
         else:
