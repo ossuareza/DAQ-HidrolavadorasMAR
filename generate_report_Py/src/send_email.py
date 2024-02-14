@@ -25,8 +25,7 @@ def send_email(test_number, service_order, date, delegate, model, parking_slot):
     smtp_password = credentials["PASSWORD"]
 
     from_email = 'hidrolavadorasmar@hotmail.com'
-    # to_email = 'hidrolavadorasmar2013@gmail.com'
-    to_email = 'jujuanncho@gmail.com'
+    to_email = 'hidrolavadorasmar2013@gmail.com'
     subject = f'{file_name} del día {date}' 
 
     body = f"""A continuación se adjunta el reporte generado el día {date}, el cuál comprende los siguientes datos:
