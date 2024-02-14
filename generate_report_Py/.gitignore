@@ -1,3 +1,4 @@
 src/tests/sending_emails.py
 src/tests/.env
-report/*
+report_test/Reporte*
+report/Reporte*
