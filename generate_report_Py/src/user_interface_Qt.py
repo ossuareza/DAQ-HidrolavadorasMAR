@@ -216,9 +216,6 @@ class Window(QtWidgets.QMainWindow):
         self.defineFontSizes(self.centralwidget)
 
         
-        self.showMaximized() 
-
-        
     def defineFontSizes(self, main_object): # Adaptative size for text
 
         text_font_size = self.screen_width // 80
@@ -574,11 +571,12 @@ class SecondWindow(Window):
             widget.setCurrentIndex(2)
             # print(widget.currentWidget(), "()" * 40)
             widget.currentWidget().goToNextTask()
-
             
             if not testing_interface:
                 GPIO.remove_event_detect(self.flowmeter_pin)
             return
+
+
 
         # If the push button is not enabled, do not allow to execute the routines.
         # This is necessary for the physical button connected to the Raspberry Pi
@@ -1263,6 +1261,11 @@ class ThirdWindow(Window):
                 table.setItem(row, col, cell)
                 col += 1
     
+    def clearTable(self, table):
+        while (table.rowCount() > 0):
+
+            table.removeRow(0)
+    
     def goToNextTask(self):
         print("Entrando a la ventana de resuemen" + "=" * 20)
         # print(widget.currentWidget(), "()" * 40)
@@ -1285,13 +1288,14 @@ class ThirdWindow(Window):
 
         self.tableWidget.rowCount()
         #set table header
-        
-        
-        self.tableWidget.setHorizontalHeaderLabels(['Variable'] + [str(i) for i in range(1, characterized_pump['total_measurements'] + 1)])
+        print( "==" * 30)
+        print(characterized_pump)
 
-        self.addTableRow(self.tableWidget, ["Flujo (L/m)"] + [round(element) for element in characterized_pump['flow']])
-        self.addTableRow(self.tableWidget, ["Presión (psi)"] + [round(element) for element in characterized_pump['pressure']])
-        self.addTableRow(self.tableWidget, ["Potencia (W)"] + [round(element) for element in characterized_pump['pump_power']])
+        self.tableWidget.setHorizontalHeaderLabels(['Variable'] + [str(i) for i in range(1, characterized_pump["total_measurements"] + 1)])
+
+        self.addTableRow(self.tableWidget, ["Flujo (L/m)"] + [round(element) for element in characterized_pump["flow"]])
+        self.addTableRow(self.tableWidget, ["Presión (psi)"] + [round(element) for element in characterized_pump["pressure"]])
+        self.addTableRow(self.tableWidget, ["Potencia (W)"] + [round(element) for element in characterized_pump["pump_power"]])
         # self.addTableRow(self.tableWidget, row_4)
     
         hheader = self.tableWidget.horizontalHeader()
@@ -1304,7 +1308,8 @@ class ThirdWindow(Window):
             
             print("Cambio a la generación de PDF")
             widget.setCurrentIndex(3)
-
+            
+            self.clearTable(self.tableWidget)
 
             keys = ["service_order", "delegate", "date", "model", "motor_speed", "power", "parking_slot"]
             line_edit = [self.lineEdit_1, self.lineEdit_2, self.lineEdit_3, self.lineEdit_4, self.lineEdit_5, self.lineEdit_6, self.lineEdit_7 ]
@@ -1433,12 +1438,6 @@ class FourthWindow(Window):
 
 
         # f = open('example.txt', 'w')
-
-        from plotter import Plotter
-        x = [12.431500365782389, 12.425942830437354, 12.499108291206824]
-        y = [1833.0681085813187, 1851.427881461648, 1839.3854139733908]
-        flow_vs_pressure = Plotter(x, y,"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png", 1)
-        flow_vs_pressure.plotter()
 
         # hydraulic_power_curve = 998.8 * 9.798 *  head_curve * flow_curve * (1 / 60000) 
 
@@ -1663,6 +1662,7 @@ if __name__ == '__main__':
 
     # widget.setFixedWidth(screen_width)
     # widget.setFixedHeight(screen_height)
+    widget.showFullScreen()
     widget.show()
 
 

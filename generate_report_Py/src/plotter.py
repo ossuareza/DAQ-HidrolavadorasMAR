@@ -9,7 +9,7 @@ import sys
 
 script_path = os.path.abspath(sys.argv[0])
 src_path = os.path.dirname(script_path)
-directory_path = os.path.dirname(src_path) + "/generate_report_Py"
+directory_path = os.path.dirname(src_path)
 
 class Plotter():
 
@@ -54,6 +54,9 @@ class Plotter():
             if self.degree == 3:
                 coefficients = self.optimization()
                 curve = np.poly1d(coefficients)
+
+                x_curve = np.linspace(0, max(self.x_data), 100)
+                y_curve = curve(x_curve)
             
             elif self.degree == 1:
                 print("self.y_data 1: ", self.y_data)
@@ -63,8 +66,8 @@ class Plotter():
                 # coefficients = np.polyfit(self.x_data, self.y_data, self.degree)
                 # curve = np.poly1d(coefficients)
 
-            x_curve = np.linspace(0, max(self.x_data), 100)
-            y_curve = np.array([self.y_data[0]] * len(x_curve))
+                x_curve = np.linspace(0, max(self.x_data), 100)
+                y_curve = np.array([self.y_data[0]] * len(x_curve))
         else:
             try:
                 coefficients = np.polyfit(self.x_data, self.y_data, self.degree)
