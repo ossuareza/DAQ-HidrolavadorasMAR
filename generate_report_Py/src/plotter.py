@@ -9,7 +9,7 @@ import sys
 
 script_path = os.path.abspath(sys.argv[0])
 src_path = os.path.dirname(script_path)
-directory_path = os.path.dirname(src_path)
+directory_path = os.path.dirname(src_path) + "/generate_report_Py"
 
 class Plotter():
 
@@ -28,7 +28,7 @@ class Plotter():
 
     # Objective function
     def objective(self, params):
-        return sum((self.curve_model(x, params) - y)**2 for x, y in zip(self.x_data[:], self.y_data[:]))
+        return sum((self.curve_model(x, params) - y)**2 for x, y in zip(self.x_data[1:], self.y_data[1:]))
 
     # Constraint function
     def constraint(self, params):
@@ -56,13 +56,15 @@ class Plotter():
                 curve = np.poly1d(coefficients)
             
             elif self.degree == 1:
-
+                print("self.y_data 1: ", self.y_data)
                 self.y_data = [np.mean(self.y_data ) ] * 3
-                coefficients = np.polyfit(self.x_data, self.y_data, self.degree)
-                curve = np.poly1d(coefficients)
+
+                # print("self.y_data 2: ", self.y_data)
+                # coefficients = np.polyfit(self.x_data, self.y_data, self.degree)
+                # curve = np.poly1d(coefficients)
 
             x_curve = np.linspace(0, max(self.x_data), 100)
-            y_curve = curve(x_curve)
+            y_curve = np.array([self.y_data[0]] * len(x_curve))
         else:
             try:
                 coefficients = np.polyfit(self.x_data, self.y_data, self.degree)
@@ -80,7 +82,7 @@ class Plotter():
 
         # Generate more points on the curve for a smoother plot
         
-    
+        print("self.y_data 3: ", self.y_data)
         # Plot the interpolated curve
         plt.figure(figsize=(15,5))
         plt.grid(color='0.7', linestyle='--')

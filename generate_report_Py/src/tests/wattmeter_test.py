@@ -57,7 +57,7 @@ master2.set_verbose(True)
 
 
 wattmeter_3 = serial.Serial(
-                       port='/dev/ttyAMA2',
+                       port='/dev/ttyAMA3',
                        baudrate=9600,
                        bytesize=8,
                        parity='N',

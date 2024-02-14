@@ -216,7 +216,7 @@ class Window(QtWidgets.QMainWindow):
         self.defineFontSizes(self.centralwidget)
 
         
-
+        self.showMaximized() 
 
         
     def defineFontSizes(self, main_object): # Adaptative size for text
@@ -274,6 +274,8 @@ class PyQt_RPI(Window):
     @pyQtSlot(int)
     def on_gpio_event(self, channel):
         
+        if time.time() - self.first_flank_detected_time > 2:
+            self.first_flank_detected = False
         
         if self.first_flank_detected:
             # print("Second flank")
@@ -420,6 +422,8 @@ class SecondWindow(Window):
         self.lcdNumber_fo.hide()
         self.label_fo_units.hide()
 
+        
+
         self.pushButton.clicked.connect(self.goToNextTask)
 
         self.flowmeter_pulses = 0
@@ -443,7 +447,8 @@ class SecondWindow(Window):
         self.different_apertures = [0, 0, 0, 0, 0]
 
         self.timer = QTimer(self)
-
+        
+        
         self.flowmeter_pin = None
 
         self.timer.timeout.connect(self.defineButtonState)
@@ -462,7 +467,14 @@ class SecondWindow(Window):
 
     def resetVariables(self):
         global characterized_pump 
-            
+        
+        # if testing_interface:
+        #     GPIO.remove_event_detect(self.flowmeter_pin)
+        
+        self.max_flow_was_defined = False
+        self.flow_measurement_started = False
+        self.flowmeter_pin = None
+
         characterized_pump["flow"] =  []
         characterized_pump["pressure"] =  []
         characterized_pump["velocity"] =  []
@@ -490,16 +502,17 @@ class SecondWindow(Window):
         self.flowmeter_pulses = 0
         
         self.actual_flow = 0
-        self.flow_measurement_started = False
         self.start_time_flow_measurement = 0
         self.flow = 0
-
+        
         self.max_flow = 0
 
         self.time_between_pulses = []
         self.first_pulse_received = False
         self.last_pulse_received_time = 0
+
         self.new_bounce_time = 1
+
 
         self.actual_step = -1
 
@@ -524,6 +537,9 @@ class SecondWindow(Window):
 
         
     def defineButtonState(self):
+
+        global characterized_pump
+
         # Hold pushButton disabled while a requirement is not achieved
         if len(self.different_apertures) > 0 and len(self.different_apertures) > self.actual_step // 2 and self.actual_step != 1:
             if self.searching_target and self.actual_step % 2 == 1:
@@ -542,8 +558,11 @@ class SecondWindow(Window):
         # self.contador_random += 1
 
     def goToNextTask(self):
+
+        global characterized_pump
+
         print(f"actual_step: {self.actual_step // 2}")
-        print(characterized_pump)
+        # print(characterized_pump)
         # if self.flow < 40:
         #     GPIO.remove_event_detect(flowmeter_pin)
         #     GPIO.add_event_detect(flowmeter_pin, GPIO.RISING, callback = self.goToNextTask, bouncetime = 1500)
@@ -553,8 +572,12 @@ class SecondWindow(Window):
             # GPIO.remove_event_detect(self.green_button_pin)
             # GPIO.add_event_detect(self.green_button_pin, GPIO.RISING, callback = widget.widget(2).goToNextTask, bouncetime = 2000)
             widget.setCurrentIndex(2)
-            print(widget.currentWidget(), "()" * 40)
+            # print(widget.currentWidget(), "()" * 40)
             widget.currentWidget().goToNextTask()
+
+            
+            if not testing_interface:
+                GPIO.remove_event_detect(self.flowmeter_pin)
             return
 
         # If the push button is not enabled, do not allow to execute the routines.
@@ -562,32 +585,36 @@ class SecondWindow(Window):
         if not self.pushButton.isEnabled():
             return
 
-        print(f"Medición actual: {self.actual_step}")
+        # print(f"Medición actual: {self.actual_step}")
         
         self.searching_target = False
 
         if self.actual_step == -1:
             
             if self.are_variables_reset:
-                if not testing_interface:
-                    GPIO.remove_event_detect(self.flowmeter_pin)
+            #     if not testing_interface:
+            #         GPIO.remove_event_detect(self.flowmeter_pin)
                 self.are_variables_reset = False
 
-
             self.flowmeter_pin = 24
+            
             if characterized_pump["pump_type"] == "roto":
                 self.flowmeter_pin = 24 
-                print("Caudalímetro de las bombas rotodinámicas")
+                self.new_bounce_time = 1
+                # print("Caudalímetro de las bombas rotodinámicas")
+
             elif characterized_pump["pump_type"] == "triplex":
                 self.flowmeter_pin = 17
-                print("Caudalímetro de las bombas triplex")
+                self.new_bounce_time = 3
+                # print("Caudalímetro de las bombas triplex")
             
             print("FLOWMETERPIN: ", self.flowmeter_pin)
             if not testing_interface:
                 GPIO.setup(self.flowmeter_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
                 GPIO.add_event_detect(self.flowmeter_pin, GPIO.RISING, callback = self.detectPulses)    
 
-            self.alerts.setText("Abra la válvula completamente")
+            self.alerts.setText("Abra la válvula completamente y espere a que aparezca \n el caudal máximo")
+            self.alerts.setAlignment(Qt.AlignCenter)
             self.alerts.setStyleSheet(f''' color: green ''')
 
             self.actual_step += 1
@@ -649,6 +676,10 @@ class SecondWindow(Window):
             self.thread1.start() 
 
     def enableButtonAfterFMeasurement(self):
+
+        global characterized_pump
+
+
         self.pushButton.setEnabled(True)
 
         if characterized_pump["pump_type"] == "triplex":
@@ -671,6 +702,9 @@ class SecondWindow(Window):
         self.alerts.setStyleSheet(f''' color: blue ''')
 
     def checkFinished(self, check_flag):
+
+        global characterized_pump
+
         if check_flag:
             self.alerts.setText("Se ha hallado la estabilidad. Continue con el proceso")
             self.alerts.setStyleSheet(f''' color: green ''')
@@ -716,7 +750,7 @@ class SecondWindow(Window):
         power, current = measurePower()
         self.lcdNumber_pw.display(power)
         self.lcdNumber_c.display(current)
-        self.lcdNumber_t.display(  measureTemperature() if not testing_interface else 22)
+        self.lcdNumber_t.display(  measureTemperature() if not testing_interface else 20)
 
 
 
@@ -891,14 +925,15 @@ class SecondWindow(Window):
             # new_bounce_time = max(time_between_pulses[-4:])
 
     def countingFlowPulses(self):
-
+        print(" ========  flow_measurement_started: ", self.flow_measurement_started)
+        print(" ********  max_flow_was_defined: ", self.max_flow_was_defined)
         if not self.flow_measurement_started:
             self.flow_measurement_started = True
             self.start_time_flow_measurement = time.time()
             self.flowmeter_pulses += 1
-            print(f"Pulse number: {self.flowmeter_pulses}")
+            # print(f"Pulse number: {self.flowmeter_pulses}")
         else:
-            print(f"Pulse number: {self.flowmeter_pulses}")
+            # print(f"Pulse number: {self.flowmeter_pulses}")
             self.flowmeter_pulses += 1
             
             if self.flowmeter_pulses == 3:
@@ -926,6 +961,8 @@ class SecondWindow(Window):
 def measurePressure():
 
     # measuring_pressure = True
+
+    global characterized_pump
 
     factor_1 = 0 
     factor_2 = 0
@@ -972,6 +1009,9 @@ def measurePressure():
 
     
 def measurePower():
+
+    global characterized_pump
+
     if characterized_pump['motor_type'] == 'single-phase':
 
         if use_wattmeter_2:
@@ -1051,6 +1091,8 @@ def measurePower():
 
 def measureTemperature():
 
+    global characterized_pump
+
     if characterized_pump["pump_type"] == "roto":
         cs_pin = 1
 
@@ -1076,6 +1118,11 @@ def read_max6675(cs_pin):
     temperature = ((raw_data[0] << 8) | raw_data[1]) >> 3
     temperature *= 0.25  # Each bit represents 0.25 degrees Celsius
     
+    if temperature < 15 and cs_pin == 0:
+        if read_max6675(1) > 15:
+            temperature = measureTemperature()
+
+            
     return temperature
 
 
@@ -1193,8 +1240,9 @@ class measureOnThread(QObject):
             pressure_in /= measurements_counter
             pressure_out /= measurements_counter
             electrical_power /= measurements_counter
+
             temperature /= measurements_counter
-        self.measurements_ready.emit([pressure_in, pressure_out, electrical_power, temperature])
+        self.measurements_ready.emit([pressure_in, pressure_out, electrical_power, round(temperature)])
         self.finished.emit()
 
 
@@ -1219,7 +1267,9 @@ class ThirdWindow(Window):
         print("Entrando a la ventana de resuemen" + "=" * 20)
         # print(widget.currentWidget(), "()" * 40)
         print(self.count_button_pushed)
+
         global characterized_pump
+
         self.label_7.setText (characterized_pump["service_order"])
         self.label_12.setText(characterized_pump["delegate"])
         self.label_13.setText(characterized_pump["date"])
@@ -1308,7 +1358,9 @@ class FourthWindow(Window):
 
     
     def goToNextTask(self):
+
         global characterized_pump
+        
         self.count_button_pushed += 1
         
         if self.count_button_pushed >= 2:
@@ -1339,6 +1391,7 @@ class FourthWindow(Window):
 
             self.count_button_pushed = 0
             self.progressBar.setValue(0)
+            self.pushButton.setText("Generar Reporte")
             
             return
 
@@ -1361,6 +1414,8 @@ class FourthWindow(Window):
         elif characterized_pump["pump_type"] == "triplex":
             degree = 1
 
+        print(characterized_pump)
+
         if not testing_interface:
             flow_vs_pump_power = Plotter(characterized_pump["flow"], characterized_pump["pump_power"],"Flujo vs Potencia","Flujo (L/min)","Potencia (W)", "FlowVsPower.png", 3)
             flow_vs_pump_power.plotter()
@@ -1379,7 +1434,11 @@ class FourthWindow(Window):
 
         # f = open('example.txt', 'w')
 
-        
+        from plotter import Plotter
+        x = [12.431500365782389, 12.425942830437354, 12.499108291206824]
+        y = [1833.0681085813187, 1851.427881461648, 1839.3854139733908]
+        flow_vs_pressure = Plotter(x, y,"Flujo vs Cabeza","Flujo (L/min)","Cabeza (m)", "FlowVsHead.png", 1)
+        flow_vs_pressure.plotter()
 
         # hydraulic_power_curve = 998.8 * 9.798 *  head_curve * flow_curve * (1 / 60000) 
 
