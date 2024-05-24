@@ -30,19 +30,17 @@ This software controls the data acquisition system for a hydraulic pump characte
 - Logic level converter BOD0004
 
 ### Sensors
-Pressure transmitters:
-- Trafag EPI8287 (-1 to 12 bar)
-- Trafag EPI8287 (0 to 25 bar)
-- Trafag EPI8287 (0 to 400 bar)
-Flow meters:
-- NWM - MJ-SDC DN 50 flanged
-- NWM - MJ-SDC DN 32
-Thermocouples 
-- 2 Thermocouple type K 0-800°C
-Potentiometers
-- 3 Potentiometers PZEM-004T with range from 0 to 22kW
-
-## Getting Started
+- Pressure transmitters:
+    - Trafag EPI8287 (-1 to 12 bar)
+    - Trafag EPI8287 (0 to 25 bar)
+    - Trafag EPI8287 (0 to 400 bar)
+- Flow meters:
+    - NWM - MJ-SDC DN 50 flanged
+    - NWM - MJ-SDC DN 32
+- Thermocouples 
+    - 2 Thermocouple type K 0-800°C
+- Potentiometers
+    - 3 Potentiometers PZEM-004T with range from 0 to 22kW
 
 ## Usage
 
@@ -54,4 +52,8 @@ Run the main script to start the user interface for data acquisition:
 
 Or just run the sh file `/home/pi/DAQ-HidrolavadorasMAR/generate_report_Py/src/run_script.sh` with the necessary permissions.
 
-[![Watch the video](https://img.youtube.com/vi/71RvwS4rxUo/maxresdefault.jpg)](https://youtu.be/71RvwS4rxUo)
+## Video 
+
+Here you can watch how it works with an example:
+
+[![Watch the video](https://img.youtube.com/vi/71RvwS4rxUo/0.jpg)](https://youtu.be/71RvwS4rxUo)
